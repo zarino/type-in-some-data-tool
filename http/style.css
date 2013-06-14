@@ -1,0 +1,88 @@
+html, body {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  padding: 0;
+}
+
+section {
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+  background: #fff;
+  background: -moz-linear-gradient(top,  #eeeeee 62%, #ffffff 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(62%,#eeeeee), color-stop(100%,#ffffff));
+  background: -webkit-linear-gradient(top,  #eeeeee 62%,#ffffff 100%);
+  background: -o-linear-gradient(top,  #eeeeee 62%,#ffffff 100%);
+  background: -ms-linear-gradient(top,  #eeeeee 62%,#ffffff 100%);
+  background: linear-gradient(to bottom,  #eeeeee 62%,#ffffff 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#eeeeee', endColorstr='#ffffff',GradientType=0 );
+}
+
+.btn img {
+  vertical-align: -3px;
+  margin-right: 3px;
+}
+
+td {
+  cursor: text;
+}
+
+td:hover {
+  background-color: #EFF8FC;
+}
+
+.table-striped tbody > tr:nth-child(odd) > td:hover {
+  background-color: #E7F2F7; 
+}
+
+td[data-name='rowid'],
+th[data-name='rowid'] {
+  display: none;
+}
+
+tr:last-child td {
+  border-bottom: 1px solid #ddd;
+}
+
+td.editing {
+  padding: 0;
+}
+
+td.editing input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 8px;
+  margin: -1px;
+  height: auto;
+  line-height: inherit;
+  font-size: inherit;
+  border: 1px solid dodgerBlue;
+}
+
+td.saving {
+  cursor: default;
+  background: #fff url(img/loader-fff-999.gif) right center no-repeat;
+  background-position: right 10px center; /* for modern browsers */
+}
+
+.table-striped tbody > tr:nth-child(odd) > td.saving {
+  background: #f9f9f9 url(img/loader-f9f9f9-999.gif) right center no-repeat;
+  background-position: right 10px center; /* for modern browsers */
+}
+
+td.failed {
+  background-image: url(img/failed.png);
+  background-repeat: no-repeat;
+  background-position: right center;
+  background-position: right 10px center; /* for modern browsers */
+}
+
+td.saved {
+  background-image: url(img/saved.png);
+  background-repeat: no-repeat;
+  background-position: right center;
+  background-position: right 10px center; /* for modern browsers */
+}
+
