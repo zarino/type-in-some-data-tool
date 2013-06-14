@@ -52,6 +52,64 @@ tr:last-child td {
   border-bottom: 1px solid #ddd;
 }
 
+th.newColumn {
+  width: 220px;
+  padding: 5px 7px 5px 5px;
+  border-bottom: 1px solid #ddd;
+}
+
+th.newColumn .input-append {
+  margin: -1px;
+}
+
+th.newColumn input {
+  width: 100px;
+  -moz-border-radius: 0;
+  border-radius: 0;
+}
+
+th.newColumn button {
+  -moz-border-radius: 0;
+  border-radius: 0;
+}
+
+th.newColumn .dropdown-menu {
+  min-width: 120px;
+}
+
+th.newColumn .dropdown-menu > li > a {
+  padding: 3px 15px;
+  cursor: pointer;
+}
+
+th.newColumn .dropdown-menu .selected,
+th.newColumn .dropdown-menu:hover .selected:hover {
+  color: #fff;
+  background-color: #0081c2;
+  background-image: -moz-linear-gradient(top,#08c,#0077b3);
+  background-image: -webkit-gradient(linear,0 0,0 100%,from(#08c),to(#0077b3));
+  background-image: -webkit-linear-gradient(top,#08c,#0077b3);
+  background-image: -o-linear-gradient(top,#08c,#0077b3);
+  background-image: linear-gradient(to bottom,#08c,#0077b3);
+  background-repeat: repeat-x;
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ff0088cc',endColorstr='#ff0077b3',GradientType=0);
+}
+
+th.newColumn .dropdown-menu:hover .selected {
+  color: #333;
+  background: #fff;
+}
+
+th.newColumn .dropdown-menu .selected .icon-ok,
+th.newColumn .dropdown-menu:hover .selected:hover .icon-ok {
+  margin-top: 4px;
+  background-image: url("https://beta.scraperwiki.com/vendor/image/glyphicons-halflings-white.png");
+}
+
+th.newColumn .dropdown-menu:hover .selected .icon-ok {
+  background-image: url("https://beta.scraperwiki.com/vendor/image/glyphicons-halflings.png");
+}
+
 td.editing {
   padding: 0;
 }

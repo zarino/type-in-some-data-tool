@@ -1,5 +1,6 @@
 function showTableSetup(){
-  console.log('set up table here')
+  $('section button').attr('disabled', true)
+  newColumn()
 }
 
 function populateTable(){
@@ -22,6 +23,8 @@ function populateTable(){
     }
   }, function(error){
     if(error.responseText.indexOf("no such table") !== -1){
+      showTableSetup()
+    } else if(error.responseText.indexOf("database file does not exist") !== -1){
       showTableSetup()
     } else {
       scraperwiki.alert('An unexpected error occurred', error.status + ' ' + error.statusText + ', ' + error.responseText, 1)
@@ -85,6 +88,19 @@ function saveCell(e){
   })
 }
 
+function newColumn(){
+  if($('thead tr').length){
+    var $tr = $('thead tr')
+  } else {
+    var $tr = $('<tr>').appendTo('thead')
+  }
+  var $td = $('<th class="newColumn">').html('<div class="input-append input-prepend"></div>').appendTo($tr)
+  var $formatWidget = $('<div class="btn-group"><button class="btn dropdown-toggle" data-toggle="dropdown">Format <span class="caret"></span></button><ul class="dropdown-menu"><li><a class="selected">Text<i class="icon-ok pull-right"></i></a></li><li><a>Integer</a></li><li><a>Decimal</a></li></ul></div>').appendTo($td.children('div'))
+  var $input = $('<input type="text">').appendTo($td.children('div')).focus()
+  var $saveWidget = $('<div class="btn-group"><button class="btn btn-success">Save</button></div>').appendTo($td.children('div'))
+  
+}
+
 function sqlEscape(str) {
   return str.replace(/[\0\x08\x09\x1a\n\r"'\\\%]/g, function(char) {
     switch (char) {
@@ -113,4 +129,7 @@ populateTable()
 
 $(function(){
   $(document).on('dblclick', 'td', editCell)
+  // $(document).on('click', '#new-row:not(:disabled)', newRow)
+  $(document).on('click', '#new-column:not(:disabled)', newColumn)
+  // $(document).on('click', '#clear-data:not(:disabled)', clearData)
 });
