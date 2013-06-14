@@ -1,3 +1,7 @@
+function showTableSetup(){
+  console.log('set up table here')
+}
+
 function populateTable(){
   scraperwiki.sql('select rowid, * from "data" order by rowid', function(data){
     if(data.length){
@@ -14,11 +18,11 @@ function populateTable(){
         $tr.appendTo('tbody')
       })
     } else {
-      console.log('no data yet!!')
+      showTableSetup()
     }
   }, function(error){
-    if(error.responseText.match(/no such table/)){
-      console.log('no data yet!!')
+    if(error.responseText.indexOf("no such table") !== -1){
+      showTableSetup()
     } else {
       scraperwiki.alert('An unexpected error occurred', error.status + ' ' + error.statusText + ', ' + error.responseText, 1)
     }
@@ -61,19 +65,20 @@ function saveCell(e){
   var rowId = $(this).parents('tr').children("[data-name='rowid']").text()
   var sql = 'UPDATE "data" SET "' + sqlEscape(columnToSave) + '" = "' + sqlEscape(valueToSave) + '" WHERE rowid = "' + sqlEscape(rowId) + '";'
   var cmd = 'sqlite3 ~/scraperwiki.sqlite ' + scraperwiki.shellEscape(sql)
-  console.log(cmd)
   $td.removeClass('editing').addClass('saving').css('width', '').text(valueToSave)
   scraperwiki.exec(cmd, function(output){
     if(output.indexOf("Error") !== -1){
       $td.removeClass('saving').addClass('failed').text( $td.attr('data-originalValue') )
+      scraperwiki.alert('Could not save new cell value', 'SQL error: ' + output, 1)
     } else {
       $td.removeClass('saving').addClass('saved')
     }
     setTimeout(function(){
       $td.removeClass('saved failed')
     }, 2000)
-  }, function(){
+  }, function(error){
     $td.removeClass('saving').addClass('failed').text( $td.attr('data-originalValue') )
+    scraperwiki.alert('Could not save new cell value', error.status + ' ' + error.statusText + ', ' + error.responseText, 1)
     setTimeout(function(){
       $td.removeClass('saved failed')
     }, 2000)

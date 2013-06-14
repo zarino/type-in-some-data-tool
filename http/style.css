@@ -7,6 +7,12 @@ body {
   padding: 0;
 }
 
+.alert {
+  -moz-border-radius: 0;
+  border-radius: 0;
+  margin-bottom: 0;
+}
+
 section {
   padding: 10px;
   border-bottom: 1px solid #ddd;
