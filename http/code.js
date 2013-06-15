@@ -221,7 +221,8 @@ function newRow(){
   editCell.call($tr.children().eq(1)[0])
 }
 
-function clearData(){
+function clearData(e){
+  e.stopPropagation()
   var $btn = $(this)
   if($btn.hasClass('btn-danger')){
     var sql = 'DROP TABLE "data";'
@@ -240,9 +241,10 @@ function clearData(){
     })
   } else {
     $btn.addClass('btn-danger').html('<img src="img/tick-white.png" width="16" height="16" alt=""> <b>Yes</b> I&rsquo;m sure')
-    setTimeout(function(){
+    $('body').on('click.danger', function(){
       $btn.removeClass('btn-danger').html('<img src="img/slash.png" width="16" height="16" alt=""> Clear all data')
-    }, 4000)
+      $('body').off('click.danger')
+    })
   }
 }
 
