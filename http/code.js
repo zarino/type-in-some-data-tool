@@ -221,6 +221,31 @@ function newRow(){
   editCell.call($tr.children().eq(1)[0])
 }
 
+function clearData(){
+  var $btn = $(this)
+  if($btn.hasClass('btn-danger')){
+    var sql = 'DROP TABLE "data";'
+    var cmd = 'sqlite3 ~/scraperwiki.sqlite ' + scraperwiki.shellEscape(sql) + ' && echo "success"'
+    $btn.addClass('loading').html('Clearing data&hellip;')
+    scraperwiki.exec(cmd, function(output){
+      if($.trim(output) == "success"){
+        window.location.reload()
+      } else {
+        $btn.removeClass('loading really').html('<img src="img/slash.png" width="16" height="16" alt=""> Clear all data')
+        scraperwiki.alert('Could not clear data', 'SQL error: ' + output, 1)
+      }
+    }, function(error){
+      $btn.removeClass('loading really').html('<img src="img/slash.png" width="16" height="16" alt=""> Clear all data')
+      scraperwiki.alert('Could not clear data', error.status + ' ' + error.statusText + ', ' + error.responseText, 1)
+    })
+  } else {
+    $btn.addClass('btn-danger').html('<img src="img/tick-white.png" width="16" height="16" alt=""> <b>Yes</b> I&rsquo;m sure')
+    setTimeout(function(){
+      $btn.removeClass('btn-danger').html('<img src="img/slash.png" width="16" height="16" alt=""> Clear all data')
+    }, 4000)
+  }
+}
+
 function sqlEscape(str) {
   return str.replace(/[\0\x08\x09\x1a\n\r"'\\\%]/g, function(char) {
     switch (char) {
@@ -251,5 +276,5 @@ $(function(){
   $(document).on('dblclick', 'td', editCell)
   $('#new-row').on('click', newRow)
   $(document).on('click', '#new-column:not(:disabled)', newColumn)
-  // $(document).on('click', '#clear-data:not(:disabled)', clearData)
+  $(document).on('click', '#clear-data:not(:disabled)', clearData)
 });
