@@ -167,6 +167,7 @@ function saveCell(e){
 }
 
 function newColumn(){
+  if($(this).is(':disabled')){ return false }
   if($('thead tr').length){
     var $tr = $('thead tr')
   } else {
@@ -234,6 +235,7 @@ function newRow(){
 }
 
 function clearData(e){
+  if($(this).is(':disabled')){ return false }
   e.stopPropagation()
   var $btn = $(this)
   if($btn.hasClass('btn-danger')){
@@ -324,10 +326,10 @@ function sqlEscape(str) {
 populateTable()
 
 $(function(){
-  $(document).on('click', 'td', editCell)
   $('#new-row').on('click', newRow)
-  $(document).on('click', '#new-column:not(:disabled)', newColumn)
-  $(document).on('click', '#clear-data:not(:disabled)', clearData)
+  $('#new-column').on('click', newColumn)
+  $('#clear-data').on('click', clearData)
+  $(document).on('click', 'td', editCell)
   $(document).on('mouseenter', 'th:not(.placeholder, .saving, .editing)', highlightColumn)
   $(document).on('mouseleave', 'th:not(.placeholder)', unhighlightColumn)
 });
