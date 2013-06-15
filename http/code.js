@@ -74,15 +74,16 @@ function saveCell(e){
     return true
   }
   var rowId = $(this).parents('tr').children("[data-name='rowid']").text()
-  var sql = 'UPDATE "data" SET "' + sqlEscape(columnToSave) + '" = "' + sqlEscape(valueToSave) + '" WHERE rowid = "' + sqlEscape(rowId) + '";'
-  var cmd = 'sqlite3 ~/scraperwiki.sqlite ' + scraperwiki.shellEscape(sql)
+  var sqlTypedValueToSave = '"' + sqlEscape(valueToSave) + '"'
+  var sql = 'UPDATE "data" SET "' + sqlEscape(columnToSave) + '" = ' + sqlTypedValueToSave + ' WHERE rowid = "' + sqlEscape(rowId) + '";'
+  var cmd = 'sqlite3 ~/scraperwiki.sqlite ' + scraperwiki.shellEscape(sql) + ' && echo "success"'
   $td.removeClass('editing').addClass('saving').css('width', '').text(valueToSave)
   scraperwiki.exec(cmd, function(output){
-    if(output.indexOf("Error") !== -1){
+    if($.trim(output) == "success"){
+      $td.removeClass('saving').addClass('saved')
+    } else {
       $td.removeClass('saving').addClass('failed').text( $td.attr('data-originalValue') )
       scraperwiki.alert('Could not save new cell value', 'SQL error: ' + output, 1)
-    } else {
-      $td.removeClass('saving').addClass('saved')
     }
     setTimeout(function(){
       $td.removeClass('saved failed')
@@ -134,18 +135,18 @@ function saveColumn(e){
   var $td = $(this).parent()
   var columnName = $(this).val()
   var sql = 'ALTER TABLE "data" ADD COLUMN "' + sqlEscape(columnName) + '";'
-  var cmd = 'sqlite3 ~/scraperwiki.sqlite ' + scraperwiki.shellEscape(sql)
+  var cmd = 'sqlite3 ~/scraperwiki.sqlite ' + scraperwiki.shellEscape(sql) + ' && echo "success"'
   $td.removeClass('editing').addClass('saving').text(columnName)
   scraperwiki.exec(cmd, function(output){
-    if(output.indexOf("Error") !== -1){
-      $td.add('tbody tr td:last-child').remove()
-      scraperwiki.alert('Could not create new column', 'SQL error: ' + output, 1)
-    } else {
+    if($.trim(output) == "success"){
       $td.removeClass('saving').addClass('saved')
       $('tbody tr td:last-child').attr('data-name', columnName)
       setTimeout(function(){
         $td.removeClass('saved')
       }, 2000)
+    } else {
+      $td.add('tbody tr td:last-child').remove()
+      scraperwiki.alert('Could not create new column', 'SQL error: ' + output, 1)
     }
   }, function(error){
     $td.add('tbody tr td:last-child').remove()
