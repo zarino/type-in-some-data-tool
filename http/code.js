@@ -108,16 +108,23 @@ function newColumn(){
     // return key saves, blur saves, escape key aborts
     if(e.which == 13 && columnName != ''){
       e.preventDefault()
-      saveColumn.call($(this), e)
+      saveColumn.call(this, e)
     } else if(e.which == 27){
       $td.add('tbody tr td:last-child').remove()
     }
   }).on('blur', function(e){
     var columnName = $.trim($(this).val())
     if(columnName != ''){
-      saveColumn.call($(this), e)
+      saveColumn.call(this, e)
     } else {
       $td.add('tbody tr td:last-child').remove()
+    }
+  }).on('keydown', function(e){
+    // tab key saves and moves to first cell in this new column
+    if(e.which == 9){
+      e.preventDefault()
+      editCell.call($('tbody tr:first-child td:last-child')[0], e)
+      saveCell.call(this, e)
     }
   })
   $('tbody tr').append('<td>')
@@ -130,12 +137,12 @@ function saveColumn(e){
   var cmd = 'sqlite3 ~/scraperwiki.sqlite ' + scraperwiki.shellEscape(sql)
   $td.removeClass('editing').addClass('saving').text(columnName)
   scraperwiki.exec(cmd, function(output){
-    console.log(output)
     if(output.indexOf("Error") !== -1){
       $td.add('tbody tr td:last-child').remove()
       scraperwiki.alert('Could not create new column', 'SQL error: ' + output, 1)
     } else {
       $td.removeClass('saving').addClass('saved')
+      $('tbody tr td:last-child').attr('data-name', columnName)
       setTimeout(function(){
         $td.removeClass('saved')
       }, 2000)
