@@ -173,6 +173,7 @@ function newColumn(){
     var $tr = $('<tr>').appendTo('thead')
   }
   var $td = $('<th class="editing">').appendTo($tr)
+  unhighlightColumn.call($td[0])
   var $input = $('<input type="text">').appendTo($td).focus().on('keyup', function(e){
     var columnName = $.trim($(this).val())
     // return key saves, escape key aborts
@@ -327,6 +328,6 @@ $(function(){
   $('#new-row').on('click', newRow)
   $(document).on('click', '#new-column:not(:disabled)', newColumn)
   $(document).on('click', '#clear-data:not(:disabled)', clearData)
-  $(document).on('mouseenter', 'th:not(.placeholder)', highlightColumn)
+  $(document).on('mouseenter', 'th:not(.placeholder, .saving, .editing)', highlightColumn)
   $(document).on('mouseleave', 'th:not(.placeholder)', unhighlightColumn)
 });
