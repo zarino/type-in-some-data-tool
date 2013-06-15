@@ -264,7 +264,7 @@ function highlightColumn(e){
   var eq = $th.index() + 1
   var $column = $('td:nth-child(' + eq + ')').add($th)
   $column.addClass('highlighted')
-  var $a = $('<a class="deleteColumn"></a>').on('click', function(){
+  var $a = $('<a class="deleteColumn" title="Delete this column"></a>').on('click', function(){
     $th.addClass('deleting')
     var cols = []
     $('th:visible').not($th).each(function(){
