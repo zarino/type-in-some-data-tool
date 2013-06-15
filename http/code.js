@@ -68,6 +68,11 @@ function saveCell(e){
   var $td = $(this).parent()
   var columnToSave = $td.attr('data-name')
   var valueToSave = $(this).val()
+  var originalValue = $td.attr('data-originalValue')
+  if(valueToSave == originalValue){
+    $td.removeClass('editing').css('width', '').text(originalValue)
+    return true
+  }
   var rowId = $(this).parents('tr').children("[data-name='rowid']").text()
   var sql = 'UPDATE "data" SET "' + sqlEscape(columnToSave) + '" = "' + sqlEscape(valueToSave) + '" WHERE rowid = "' + sqlEscape(rowId) + '";'
   var cmd = 'sqlite3 ~/scraperwiki.sqlite ' + scraperwiki.shellEscape(sql)
