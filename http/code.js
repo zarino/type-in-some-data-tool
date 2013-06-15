@@ -324,7 +324,7 @@ function sqlEscape(str) {
 populateTable()
 
 $(function(){
-  $(document).on('dblclick', 'td', editCell)
+  $(document).on('click', 'td', editCell)
   $('#new-row').on('click', newRow)
   $(document).on('click', '#new-column:not(:disabled)', newColumn)
   $(document).on('click', '#clear-data:not(:disabled)', clearData)
