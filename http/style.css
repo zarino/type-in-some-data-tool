@@ -65,14 +65,14 @@ th.editing {
 
 th.placeholder {
   font-weight: normal;
-  color: #ccc;
+  color: #aaa;
   cursor: pointer;
   text-align: center;
   border-top: 0;
 }
 
 th.placeholder:hover {
-  color: #aaa;
+  color: #888;
   text-decoration: underline;
 }
 
@@ -125,11 +125,11 @@ th.saved {
 a#new-row {
   display: block;
   text-align: center;
-  color: #ccc;
+  color: #aaa;
   padding: 10px;
   cursor: pointer;
 }
 
 a#new-row:hover {
-  color: #aaa;
+  color: #888;
 }
