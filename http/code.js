@@ -1,11 +1,61 @@
 function showTableSetup(){
-  $('section button').attr('disabled', true)
-  newColumn()
+  $th = $('<th class="placeholder">Click here to name your first column</th>')
+  $th.appendTo('thead')
+  $th.wrap('<tr />')
+  $th.on('click', function(){
+    $th.removeClass('placeholder').addClass('editing').empty()
+    var $input = $('<input type="text">').appendTo($th).focus().on('keyup', function(e){
+      var columnName = $.trim($(this).val())
+      // return key saves, escape key aborts
+      if(e.which == 13 && columnName != ''){
+        e.preventDefault()
+        saveFirstColumn.call(this, e)
+      } else if(e.which == 27){
+        $th.removeClass('editing').addClass('placeholder').text('Click here to name your first column')
+      }
+    }).on('blur', function(e){
+      $th.removeClass('editing').addClass('placeholder').text('Click here to name your first column')
+    }).on('keydown', function(e){
+      if(e.which == 9){
+        e.preventDefault()
+        saveFirstColumn.call(this, e)
+      }
+    })
+  })
+}
+
+function saveFirstColumn(){
+  var $th = $(this).parent()
+  var columnName = $(this).val()
+  var sql = 'CREATE TABLE "data" ("' + sqlEscape(columnName) + '");'
+  var cmd = 'sqlite3 ~/scraperwiki.sqlite ' + scraperwiki.shellEscape(sql) + ' && echo "success"'
+  $th.removeClass('editing').addClass('saving').text(columnName).attr('data-name', columnName)
+  $th.before('<th data-name="rowid">rowid</th>')
+  scraperwiki.exec(cmd, function(output){
+    if($.trim(output) == "success"){
+      $th.removeClass('saving').addClass('saved')
+      $('section button').attr('disabled', null)
+      $('#new-row').show()
+      setTimeout(function(){
+        $th.removeClass('saved')
+      }, 2000)
+    } else {
+      $th.removeClass('saving').addClass('placeholder').text('Click here to name your first column')
+      $th.prev().remove()
+      scraperwiki.alert('Could not create first column', 'SQL error: ' + output, 1)
+    }
+  }, function(error){
+    $th.removeClass('saving').addClass('placeholder').text('Click here to name your first column')
+    $th.prev().remove()
+    scraperwiki.alert('Could not create first column', error.status + ' ' + error.statusText + ', ' + error.responseText, 1)
+  })
 }
 
 function populateTable(){
   scraperwiki.sql('select rowid, * from "data" order by rowid', function(data){
     if(data.length){
+      $('#new-row').show()
+      $('section button:disabled').removeAttr('disabled')
       var $tr = $('<tr>')
       $.each(data[0], function(cellName, cellValue){
         $tr.append('<th data-name="' + cellName + '">' + cellName + '</th>')
@@ -79,8 +129,8 @@ function saveCell(e){
     // we're updating a value in an existing record
     var sql = 'UPDATE "data" SET "' + sqlEscape(columnToSave) + '" = ' + sqlTypedValueToSave + ' WHERE rowid = "' + sqlEscape(rowId) + '";'
   } else {
-    // this is a completely new row; generate an incremental rowid
-    var newRowId = parseInt($td.parent().prev().children('td:first-child').text()) + 1
+    // this is a completely new row; generate an incremental rowid, or if this is the first row, start at 1
+    var newRowId = parseInt($td.parent().prev().children('td:first-child').text()) + 1 || 1
     var sql = 'INSERT INTO "data" (rowid, "' + sqlEscape(columnToSave) + '") VALUES (' + newRowId + ', ' + sqlTypedValueToSave + ');'
     $td.parent().children().eq(0).text(newRowId)
   }
@@ -112,9 +162,9 @@ function newColumn(){
     var $tr = $('<tr>').appendTo('thead')
   }
   var $td = $('<th class="editing">').appendTo($tr)
-  var $input = $('<input type="text">').appendTo($td).focus().on('keyup blur', function(e){
+  var $input = $('<input type="text">').appendTo($td).focus().on('keyup', function(e){
     var columnName = $.trim($(this).val())
-    // return key saves, blur saves, escape key aborts
+    // return key saves, escape key aborts
     if(e.which == 13 && columnName != ''){
       e.preventDefault()
       saveColumn.call(this, e)
@@ -199,7 +249,7 @@ populateTable()
 
 $(function(){
   $(document).on('dblclick', 'td', editCell)
-  $(document).on('click', '#new-row:not(:disabled)', newRow)
+  $('#new-row').on('click', newRow)
   $(document).on('click', '#new-column:not(:disabled)', newColumn)
   // $(document).on('click', '#clear-data:not(:disabled)', clearData)
 });

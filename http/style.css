@@ -31,8 +31,14 @@ section {
   margin-right: 3px;
 }
 
+.table {
+  margin: 0;
+  border-bottom: 1px solid #ddd;
+}
+
 td {
   cursor: text;
+  height: 20px;
 }
 
 td:hover {
@@ -48,11 +54,6 @@ th[data-name='rowid'] {
   display: none;
 }
 
-tr:last-child td,
-tr.new td {
-  border-bottom: 1px solid #ddd;
-}
-
 td.editing,
 th.editing {
   padding: 0;
@@ -60,6 +61,19 @@ th.editing {
 
 th.editing {
   width: 220px;
+}
+
+th.placeholder {
+  font-weight: normal;
+  color: #ccc;
+  cursor: pointer;
+  text-align: center;
+  border-top: 0;
+}
+
+th.placeholder:hover {
+  color: #aaa;
+  text-decoration: underline;
 }
 
 td input[type="text"],
@@ -108,3 +122,14 @@ th.saved {
   background-position: right 10px center; /* for modern browsers */
 }
 
+a#new-row {
+  display: block;
+  text-align: center;
+  color: #ccc;
+  padding: 10px;
+  cursor: pointer;
+}
+
+a#new-row:hover {
+  color: #aaa;
+}
