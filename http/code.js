@@ -89,14 +89,25 @@ function editCell(e){
   var $td = $(this)
   var originalValue = $(this).text()
   var width = $td.outerWidth()
-  var $input = $('<input>').attr({ type: 'text', value: originalValue }).on('blur', saveCell).on('keyup', function(e){
+  var $input = $('<input>').attr({ type: 'text', value: originalValue }).on('blur', function(e){
+    // on blur, deleted entire row if it is empty, or save if not
+    if($.trim($(this).val()) == '' && $.trim($(this).parents('tr').text()) == ''){
+      $(this).parents('tr').remove()
+    } else {
+      saveCell.call(this, e)
+    }
+  }).on('keyup', function(e){
     // return key saves, escape key aborts
     if(e.which == 13){
       e.preventDefault()
       saveCell.call(this, e)
     } else if(e.which == 27){
       var originalValue = $(this).parent().attr('data-originalValue')
-      $(this).parent().removeClass('editing').css('width', '').text(originalValue)
+      if($(this).parents('tr').is('.new') && $.trim($(this).parents('tr').text()) == ''){
+        $(this).parents('tr').remove()
+      } else {
+        $(this).parent().removeClass('editing').css('width', '').text(originalValue)
+      }
     }
   }).on('keydown', function(e){
     // tab key saves and moves to next cell
@@ -248,6 +259,43 @@ function clearData(e){
   }
 }
 
+function highlightColumn(e){
+  var $th = $(this)
+  var eq = $th.index() + 1
+  var $column = $('td:nth-child(' + eq + ')').add($th)
+  $column.addClass('highlighted')
+  var $a = $('<a class="deleteColumn"></a>').on('click', function(){
+    $th.addClass('deleting')
+    var cols = []
+    $('th:visible').not($th).each(function(){
+      cols.push($(this).text())
+    })
+    cols = '"' + cols.join('", "') + '"'
+    var sql = 'BEGIN TRANSACTION; CREATE TEMPORARY TABLE backup(' + cols + '); INSERT INTO backup SELECT ' + cols + ' FROM data; DROP TABLE data; CREATE TABLE data(' + cols + '); INSERT INTO data SELECT ' + cols + ' FROM backup; DROP TABLE backup; COMMIT;'
+    var cmd = 'sqlite3 ~/scraperwiki.sqlite ' + scraperwiki.shellEscape(sql) + ' && echo "success"'
+    scraperwiki.exec(cmd, function(output){
+      if($.trim(output) == "success"){
+        $column.remove()
+      } else {
+        $th.removeClass('deleting').children('a').remove()
+        $column.removeClass('highlighted')
+        scraperwiki.alert('Could not delete column', 'SQL error: ' + output, 1)
+      }
+    }, function(error){
+        $th.removeClass('deleting').children('a').remove()
+        $column.removeClass('highlighted')
+      scraperwiki.alert('Could not delete column', error.status + ' ' + error.statusText + ', ' + error.responseText, 1)
+    })
+  }).appendTo($th)
+}
+
+function unhighlightColumn(e){
+  var eq = $(this).index() + 1
+  $(this).removeClass('highlighted')
+  $('td:nth-child(' + eq + ')').removeClass('highlighted')
+  $(this).children('a').remove()
+}
+
 function sqlEscape(str) {
   return str.replace(/[\0\x08\x09\x1a\n\r"'\\\%]/g, function(char) {
     switch (char) {
@@ -279,4 +327,6 @@ $(function(){
   $('#new-row').on('click', newRow)
   $(document).on('click', '#new-column:not(:disabled)', newColumn)
   $(document).on('click', '#clear-data:not(:disabled)', clearData)
+  $(document).on('mouseenter', 'th:not(.placeholder)', highlightColumn)
+  $(document).on('mouseleave', 'th:not(.placeholder)', unhighlightColumn)
 });

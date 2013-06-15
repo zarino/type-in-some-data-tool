@@ -63,19 +63,6 @@ th.editing {
   width: 220px;
 }
 
-th.placeholder {
-  font-weight: normal;
-  color: #aaa;
-  cursor: pointer;
-  text-align: center;
-  border-top: 0;
-}
-
-th.placeholder:hover {
-  color: #888;
-  text-decoration: underline;
-}
-
 td input[type="text"],
 th input[type="text"] {
   -webkit-border-radius: 0;
@@ -132,4 +119,57 @@ a#new-row {
 
 a#new-row:hover {
   color: #888;
+}
+
+th.highlighted {
+  background-color: #FFD0D0;
+  position: relative;
+}
+
+td.highlighted {
+  background-color: #FCEFEF;
+}
+
+.table-striped tbody > tr:nth-child(odd) > td.highlighted {
+  background-color: #F7E7E7;
+}
+
+th .deleteColumn {
+  display: block;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 36px;
+  cursor: pointer;
+  background: transparent url(img/slash.png) center center no-repeat;
+}
+
+th.deleting {
+  background-image: url(img/loader-fff-a00.gif);
+  background-repeat: no-repeat;
+  background-position: right center;
+  background-position: right 10px center; /* for modern browsers */
+}
+
+th.highlighted.deleting {
+  background-image: url(img/loader-ffd0d0-a00.gif);
+}
+
+th.deleting .deleteColumn {
+  display: none;
+}
+
+th.placeholder {
+  font-weight: normal;
+  color: #aaa;
+  cursor: pointer;
+  text-align: center;
+  border-top: 0;
+  background: none;
+}
+
+th.placeholder:hover {
+  color: #888;
+  text-decoration: underline;
 }
