@@ -14,6 +14,9 @@ function populateTable(){
       $.each(data, function(i, row){
         var $tr = $('<tr>')
         $.each(row, function(cellName, cellValue){
+          if(cellValue == null){
+            var cellValue = ''
+          }
           $tr.append('<td data-name="' + cellName + '">' + cellValue + '</td>')
         })
         $tr.appendTo('tbody')
@@ -94,11 +97,48 @@ function newColumn(){
   } else {
     var $tr = $('<tr>').appendTo('thead')
   }
-  var $td = $('<th class="newColumn">').html('<div class="input-append input-prepend"></div>').appendTo($tr)
-  var $formatWidget = $('<div class="btn-group"><button class="btn dropdown-toggle" data-toggle="dropdown">Format <span class="caret"></span></button><ul class="dropdown-menu"><li><a class="selected">Text<i class="icon-ok pull-right"></i></a></li><li><a>Integer</a></li><li><a>Decimal</a></li></ul></div>').appendTo($td.children('div'))
-  var $input = $('<input type="text">').appendTo($td.children('div')).focus()
-  var $saveWidget = $('<div class="btn-group"><button class="btn btn-success">Save</button></div>').appendTo($td.children('div'))
-  
+  var $td = $('<th class="editing">').appendTo($tr)
+  var $input = $('<input type="text">').appendTo($td).focus().on('keyup blur', function(e){
+    var columnName = $.trim($(this).val())
+    // return key saves, blur saves, escape key aborts
+    if(e.which == 13 && columnName != ''){
+      e.preventDefault()
+      saveColumn.call($(this), e)
+    } else if(e.which == 27){
+      $td.add('tbody tr td:last-child').remove()
+    }
+  }).on('blur', function(e){
+    var columnName = $.trim($(this).val())
+    if(columnName != ''){
+      saveColumn.call($(this), e)
+    } else {
+      $td.add('tbody tr td:last-child').remove()
+    }
+  })
+  $('tbody tr').append('<td>')
+}
+
+function saveColumn(e){
+  var $td = $(this).parent()
+  var columnName = $(this).val()
+  var sql = 'ALTER TABLE "data" ADD COLUMN "' + sqlEscape(columnName) + '";'
+  var cmd = 'sqlite3 ~/scraperwiki.sqlite ' + scraperwiki.shellEscape(sql)
+  $td.removeClass('editing').addClass('saving').text(columnName)
+  scraperwiki.exec(cmd, function(output){
+    console.log(output)
+    if(output.indexOf("Error") !== -1){
+      $td.add('tbody tr td:last-child').remove()
+      scraperwiki.alert('Could not create new column', 'SQL error: ' + output, 1)
+    } else {
+      $td.removeClass('saving').addClass('saved')
+      setTimeout(function(){
+        $td.removeClass('saved')
+      }, 2000)
+    }
+  }, function(error){
+    $td.add('tbody tr td:last-child').remove()
+    scraperwiki.alert('Could not create new column', error.status + ' ' + error.statusText + ', ' + error.responseText, 1)
+  })
 }
 
 function sqlEscape(str) {
