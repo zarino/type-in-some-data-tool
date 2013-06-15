@@ -75,7 +75,15 @@ function saveCell(e){
   }
   var rowId = $(this).parents('tr').children("[data-name='rowid']").text()
   var sqlTypedValueToSave = '"' + sqlEscape(valueToSave) + '"'
-  var sql = 'UPDATE "data" SET "' + sqlEscape(columnToSave) + '" = ' + sqlTypedValueToSave + ' WHERE rowid = "' + sqlEscape(rowId) + '";'
+  if(rowId){
+    // we're updating a value in an existing record
+    var sql = 'UPDATE "data" SET "' + sqlEscape(columnToSave) + '" = ' + sqlTypedValueToSave + ' WHERE rowid = "' + sqlEscape(rowId) + '";'
+  } else {
+    // this is a completely new row; generate an incremental rowid
+    var newRowId = parseInt($td.parent().prev().children('td:first-child').text()) + 1
+    var sql = 'INSERT INTO "data" (rowid, "' + sqlEscape(columnToSave) + '") VALUES (' + newRowId + ', ' + sqlTypedValueToSave + ');'
+    $td.parent().children().eq(0).text(newRowId)
+  }
   var cmd = 'sqlite3 ~/scraperwiki.sqlite ' + scraperwiki.shellEscape(sql) + ' && echo "success"'
   $td.removeClass('editing').addClass('saving').css('width', '').text(valueToSave)
   scraperwiki.exec(cmd, function(output){
@@ -154,6 +162,15 @@ function saveColumn(e){
   })
 }
 
+function newRow(){
+  var $tr = $('<tr class="new">').appendTo('tbody')
+  $('thead th').each(function(){
+    var columnName = $(this).text()
+    $tr.append('<td data-name="' + columnName + '">')
+  })
+  editCell.call($tr.children().eq(1)[0])
+}
+
 function sqlEscape(str) {
   return str.replace(/[\0\x08\x09\x1a\n\r"'\\\%]/g, function(char) {
     switch (char) {
@@ -182,7 +199,7 @@ populateTable()
 
 $(function(){
   $(document).on('dblclick', 'td', editCell)
-  // $(document).on('click', '#new-row:not(:disabled)', newRow)
+  $(document).on('click', '#new-row:not(:disabled)', newRow)
   $(document).on('click', '#new-column:not(:disabled)', newColumn)
   // $(document).on('click', '#clear-data:not(:disabled)', clearData)
 });

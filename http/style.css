@@ -48,7 +48,8 @@ th[data-name='rowid'] {
   display: none;
 }
 
-tr:last-child td {
+tr:last-child td,
+tr.new td {
   border-bottom: 1px solid #ddd;
 }
 
