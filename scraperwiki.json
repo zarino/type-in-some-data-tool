@@ -1,4 +1,6 @@
 {
   "displayName": "Type in some data",
-  "description": "Create a structured dataset from scratch"
+  "description": "Create a structured dataset from scratch",
+  "icon": "https://s3-eu-west-1.amazonaws.com/sw-icons/tool-icon-type-in-some-data.png",
+  "color": "#caac52"
 }
