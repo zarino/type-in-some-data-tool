@@ -173,7 +173,7 @@ function newColumn(){
   } else {
     var $tr = $('<tr>').appendTo('thead')
   }
-  var $td = $('<th class="editing">').appendTo($tr)
+  var $td = $('<th class="new editing">').appendTo($tr)
   unhighlightColumn.call($td[0])
   var $input = $('<input type="text">').appendTo($td).focus().on('keyup', function(e){
     var columnName = $.trim($(this).val())
@@ -207,7 +207,7 @@ function saveColumn(e){
   var columnName = $(this).val()
   var sql = 'ALTER TABLE "data" ADD COLUMN "' + sqlEscape(columnName) + '";'
   var cmd = 'sqlite3 ~/scraperwiki.sqlite ' + scraperwiki.shellEscape(sql) + ' && echo "success"'
-  $td.removeClass('editing').addClass('saving').text(columnName)
+  $td.removeClass('new editing').addClass('saving').text(columnName)
   scraperwiki.exec(cmd, function(output){
     if($.trim(output) == "success"){
       $td.removeClass('saving').addClass('saved')
@@ -263,6 +263,7 @@ function clearData(e){
 }
 
 function highlightColumn(e){
+  e.stopPropagation()
   var $th = $(this)
   var eq = $th.index() + 1
   var $column = $('td:nth-child(' + eq + ')').add($th)
@@ -299,6 +300,81 @@ function unhighlightColumn(e){
   $(this).children('a').remove()
 }
 
+function renameColumn(e){
+  // ignore clicks from any of the table header's children (eg: a.deleteColumn)
+  if(e.target.tagName != 'TH'){ return false }
+
+  var $th = $(this)
+  unhighlightColumn.call($th[0])
+
+  var originalName = $th.attr('data-name')
+  var width = $th.outerWidth()
+  $th.addClass('editing').css('width', width).empty()
+  var $input = $('<input>').attr({ type: 'text', value: originalName }).on('blur', function(e){
+    // on blur, deleted entire row if it is empty, or save if not
+    var newName = $.trim($(this).val())
+    if(newName == originalName || newName == ''){
+      $(this).parent().removeClass('editing').css('width', '').text(originalName)
+    } else {
+      saveColumnName.call(this, e)
+    }
+  }).on('keyup', function(e){
+    // return key saves, escape key aborts
+    if(e.which == 13){
+      e.preventDefault()
+      saveColumnName.call(this, e)
+    } else if(e.which == 27){
+      $(this).parent().removeClass('editing').css('width', '').text(originalName)
+    }
+  }).on('keydown', function(e){
+    // tab key saves and moves to next cell
+    if(e.which == 9){
+      e.preventDefault()
+      saveColumnName.call(this, e)
+    }
+  })
+  $input.appendTo($th).select()
+}
+
+function saveColumnName(){
+  var $th = $(this).parent()
+  var newName = $(this).val()
+  var originalName = $th.attr('data-name')
+
+  var oldColumns = []
+  var newColumns = []
+  $('th:visible').each(function(){
+    var n = $(this).attr('data-name')
+    oldColumns.push(n)
+    if(n == originalName){
+      newColumns.push(newName)
+    } else {
+      newColumns.push(n)
+    }
+  })
+  oldColumns = '"' + oldColumns.join('", "') + '"'
+  newColumns = '"' + newColumns.join('", "') + '"'
+
+  var sql = 'BEGIN TRANSACTION; CREATE TEMPORARY TABLE backup(' + oldColumns + '); INSERT INTO backup SELECT ' + oldColumns + ' FROM data; DROP TABLE data; CREATE TABLE data(' + newColumns + '); INSERT INTO data SELECT ' + oldColumns + ' FROM backup; DROP TABLE backup; COMMIT;'
+  var cmd = 'sqlite3 ~/scraperwiki.sqlite ' + scraperwiki.shellEscape(sql) + ' && echo "success"'
+  $th.removeClass('editing').addClass('saving').css('width', '').text(newName)
+  scraperwiki.exec(cmd, function(output){
+    if($.trim(output) == "success"){
+      $th.removeClass('saving').addClass('saved')
+      $('[data-name="' + originalName + '"]').attr('data-name', newName)
+      setTimeout(function(){
+        $th.removeClass('saved')
+      }, 2000)
+    } else {
+      $th.removeClass('editing').css('width', '').text(originalName)
+      scraperwiki.alert('Could not rename column', 'SQL error: ' + output, 1)
+    }
+  }, function(error){
+    $th.removeClass('editing').css('width', '').text(originalName)
+    scraperwiki.alert('Could not rename column', error.status + ' ' + error.statusText + ', ' + error.responseText, 1)
+  })
+}
+
 function sqlEscape(str) {
   return str.replace(/[\0\x08\x09\x1a\n\r"'\\\%]/g, function(char) {
     switch (char) {
@@ -330,6 +406,7 @@ $(function(){
   $('#new-column').on('click', newColumn)
   $('#clear-data').on('click', clearData)
   $(document).on('click', 'td', editCell)
+  $(document).on('click', 'th:not(.placeholder, .saving, .editing)', renameColumn)
   $(document).on('mouseenter', 'th:not(.placeholder, .saving, .editing)', highlightColumn)
   $(document).on('mouseleave', 'th:not(.placeholder)', unhighlightColumn)
 });

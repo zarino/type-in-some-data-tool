@@ -36,7 +36,7 @@ section {
   border-bottom: 1px solid #ddd;
 }
 
-td {
+td, th {
   cursor: text;
   height: 20px;
 }
@@ -59,7 +59,7 @@ th.editing {
   padding: 0;
 }
 
-th.editing {
+th.new.editing {
   width: 220px;
 }
 
@@ -135,15 +135,39 @@ td.highlighted {
   background-color: #F7E7E7;
 }
 
+th.highlighted:after {
+  content: "";
+  display: block;
+  position: absolute;
+  top: -1px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: #ff9d9d;
+}
+
+tbody tr:first-child td.highlighted {
+  border-top: 1px solid #ff9d9d;
+}
+
+tbody tr:first-child td.highlighted {
+  border-top: 1px solid #ff9d9d;
+}
+
 th .deleteColumn {
   display: block;
   position: absolute;
   top: 0;
   right: 0;
   bottom: 0;
-  width: 36px;
+  width: 40px;
   cursor: pointer;
   background: transparent url(img/slash.png) center center no-repeat;
+}
+
+th .deleteColumn:hover {
+  background-color: #ffb6b6;
+  border-left: 1px solid #ff9d9d;
 }
 
 th.deleting {
