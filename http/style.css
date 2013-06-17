@@ -26,6 +26,10 @@ section {
   filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#eeeeee', endColorstr='#ffffff',GradientType=0 );
 }
 
+#clear-data {
+  display: none;
+}
+
 .btn img {
   vertical-align: -3px;
   margin-right: 3px;
@@ -181,16 +185,19 @@ th.deleting .deleteColumn {
   display: none;
 }
 
-th.placeholder {
-  font-weight: normal;
-  color: #aaa;
-  cursor: pointer;
+#first-column-hint {
+  position: relative;
+  float: right;
   text-align: center;
-  border-top: 0;
-  background: none;
+  margin: 20px 20px 0 0;
+  line-height: 22px;
+  color: #999;
 }
 
-th.placeholder:hover {
-  color: #888;
-  text-decoration: underline;
+#first-column-hint i {
+  position: absolute;
+  top: -15px;
+  right: 50%;
+  margin-right: -7px;
+  opacity: 0.5;
 }

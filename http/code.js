@@ -1,88 +1,48 @@
-function showTableSetup(){
-  $th = $('<th class="placeholder">Click here to name your first column</th>')
-  $th.appendTo('thead')
-  $th.wrap('<tr />')
-  $th.on('click', function(){
-    $th.removeClass('placeholder').addClass('editing').empty()
-    var $input = $('<input type="text">').appendTo($th).focus().on('keyup', function(e){
-      var columnName = $.trim($(this).val())
-      // return key saves, escape key aborts
-      if(e.which == 13 && columnName != ''){
-        e.preventDefault()
-        saveFirstColumn.call(this, e)
-      } else if(e.which == 27){
-        $th.removeClass('editing').addClass('placeholder').text('Click here to name your first column')
-      }
-    }).on('blur', function(e){
-      $th.removeClass('editing').addClass('placeholder').text('Click here to name your first column')
-    }).on('keydown', function(e){
-      if(e.which == 9){
-        e.preventDefault()
-        saveFirstColumn.call(this, e)
-      }
-    })
-  })
-}
-
-function saveFirstColumn(){
-  var $th = $(this).parent()
-  var columnName = $(this).val()
-  var sql = 'CREATE TABLE "data" ("' + sqlEscape(columnName) + '");'
-  var cmd = 'sqlite3 ~/scraperwiki.sqlite ' + scraperwiki.shellEscape(sql) + ' && echo "success"'
-  $th.removeClass('editing').addClass('saving').text(columnName).attr('data-name', columnName)
-  $th.before('<th data-name="rowid">rowid</th>')
-  scraperwiki.exec(cmd, function(output){
-    if($.trim(output) == "success"){
-      $th.removeClass('saving').addClass('saved')
-      $('section button').attr('disabled', null)
-      $('#new-row').show()
-      setTimeout(function(){
-        $th.removeClass('saved')
-      }, 2000)
-    } else {
-      $th.removeClass('saving').addClass('placeholder').text('Click here to name your first column')
-      $th.prev().remove()
-      scraperwiki.alert('Could not create first column', 'SQL error: ' + output, 1)
-    }
-  }, function(error){
-    $th.removeClass('saving').addClass('placeholder').text('Click here to name your first column')
-    $th.prev().remove()
-    scraperwiki.alert('Could not create first column', error.status + ' ' + error.statusText + ', ' + error.responseText, 1)
-  })
-}
-
 function populateTable(){
-  scraperwiki.sql('select rowid, * from "data" order by rowid', function(data){
-    if(data.length){
-      $('#new-row').show()
-      $('section button:disabled').removeAttr('disabled')
-      var $tr = $('<tr>')
-      $.each(data[0], function(cellName, cellValue){
-        $tr.append('<th data-name="' + cellName + '">' + cellName + '</th>')
+  // Is there already a table?
+  scraperwiki.sql.meta(function(meta){
+    if('data' in meta.table){
+      // Yes! There's a table. Make the header row.
+      $('#new-row, #clear-data').show()
+      var $tr = $('<tr>').appendTo('thead')
+      $tr.append('<th data-name="rowid">rowid</th>')
+      $.each(meta.table.data.columnNames, function(i, colName){
+        $tr.append('<th data-name="' + colName + '">' + colName + '</th>')
       })
-      $tr.appendTo('thead')
-      $.each(data, function(i, row){
-        var $tr = $('<tr>')
-        $.each(row, function(cellName, cellValue){
-          if(cellValue == null){
-            var cellValue = ''
-          }
-          $tr.append('<td data-name="' + cellName + '">' + cellValue + '</td>')
-        })
-        $tr.appendTo('tbody')
+      // Is there any data in that table?
+      scraperwiki.sql('select rowid, * from "data" order by rowid', function(data){
+        if(data.length){
+          // Yes! Append all the rows to the table.
+          $.each(data, function(i, row){
+            var $tr = $('<tr>').appendTo('tbody')
+            $.each(row, function(cellName, cellValue){
+              if(cellValue == null){
+                var cellValue = ''
+              }
+              $tr.append('<td data-name="' + cellName + '">' + cellValue + '</td>')
+            })
+          })
+        }
+      }, function(error){
+        scraperwiki.alert('An unexpected error occurred', error.status + ' ' + error.statusText + ', ' + error.responseText, 1)
       })
     } else {
+      // D'oh, no table yet!
       showTableSetup()
     }
   }, function(error){
-    if(error.responseText.indexOf("no such table") !== -1){
-      showTableSetup()
-    } else if(error.responseText.indexOf("database file does not exist") !== -1){
+    // D'oh, no database yet!
+    if(error.responseText.indexOf("database file does not exist") !== -1){
       showTableSetup()
     } else {
       scraperwiki.alert('An unexpected error occurred', error.status + ' ' + error.statusText + ', ' + error.responseText, 1)
     }
   })
+}
+
+function showTableSetup(){
+  fresh = true
+  $('<p id="first-column-hint">Click here to create<br/>your first column<i class="icon-chevron-up"></i></p>').hide().appendTo('body').fadeIn().on('click', newColumn)
 }
 
 function editCell(e){
@@ -167,7 +127,7 @@ function saveCell(e){
 }
 
 function newColumn(){
-  if($(this).is(':disabled')){ return false }
+  $('#first-column-hint').remove()
   if($('thead tr').length){
     var $tr = $('thead tr')
   } else {
@@ -183,6 +143,7 @@ function newColumn(){
       saveColumn.call(this, e)
     } else if(e.which == 27){
       $td.add('tbody tr td:last-child').remove()
+      if(fresh){ showTableSetup() }
     }
   }).on('blur', function(e){
     var columnName = $.trim($(this).val())
@@ -190,6 +151,7 @@ function newColumn(){
       saveColumn.call(this, e)
     } else {
       $td.add('tbody tr td:last-child').remove()
+      if(fresh){ showTableSetup() }
     }
   }).on('keydown', function(e){
     // tab key saves and moves to first cell in this new column
@@ -203,24 +165,35 @@ function newColumn(){
 }
 
 function saveColumn(e){
-  var $td = $(this).parent()
+  var $th = $(this).parent()
   var columnName = $(this).val()
-  var sql = 'ALTER TABLE "data" ADD COLUMN "' + sqlEscape(columnName) + '";'
+  if(fresh){
+    var sql = 'CREATE TABLE IF NOT EXISTS "data" ("' + sqlEscape(columnName) + '");'
+  } else {
+    var sql = 'ALTER TABLE "data" ADD COLUMN "' + sqlEscape(columnName) + '";'
+  }
   var cmd = 'sqlite3 ~/scraperwiki.sqlite ' + scraperwiki.shellEscape(sql) + ' && echo "success"'
-  $td.removeClass('new editing').addClass('saving').text(columnName)
+  $th.removeClass('new editing').addClass('saving').text(columnName)
   scraperwiki.exec(cmd, function(output){
     if($.trim(output) == "success"){
-      $td.removeClass('saving').addClass('saved')
+      if(fresh){
+        fresh = false
+        $th.before('<th data-name="rowid">rowid</th>')
+        $('#new-row, #clear-data').fadeIn()
+      }
+      $th.removeClass('saving').addClass('saved')
       $('tbody tr td:last-child').attr('data-name', columnName)
       setTimeout(function(){
-        $td.removeClass('saved')
+        $th.removeClass('saved')
       }, 2000)
     } else {
-      $td.add('tbody tr td:last-child').remove()
+      $th.add('tbody tr td:last-child').remove()
+      if(fresh){ showTableSetup() }
       scraperwiki.alert('Could not create new column', 'SQL error: ' + output, 1)
     }
   }, function(error){
-    $td.add('tbody tr td:last-child').remove()
+    $th.add('tbody tr td:last-child').remove()
+    if(fresh){ showTableSetup() }
     scraperwiki.alert('Could not create new column', error.status + ' ' + error.statusText + ', ' + error.responseText, 1)
   })
 }
@@ -235,7 +208,6 @@ function newRow(){
 }
 
 function clearData(e){
-  if($(this).is(':disabled')){ return false }
   e.stopPropagation()
   var $btn = $(this)
   if($btn.hasClass('btn-danger')){
@@ -398,6 +370,8 @@ function sqlEscape(str) {
     }
   })
 }
+
+var fresh = false
 
 populateTable()
 
