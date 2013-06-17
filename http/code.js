@@ -70,7 +70,8 @@ function editCell(e){
       }
     }
   }).on('keydown', function(e){
-    // tab key saves and moves to next cell
+    // tab key moves to next cell
+    // (the consequent blur will save current cell)
     if(e.which == 9){
       e.preventDefault()
       if($(this).parent().next().length){
@@ -78,7 +79,6 @@ function editCell(e){
       } else if($(this).parents('tr').next().length){
         editCell.call($(this).parents('tr').next().children('td:visible').eq(0)[0], e)
       }
-      saveCell.call(this, e)
     }
   })
   $td.addClass('editing').css('width', width).empty().attr('data-originalValue', originalValue)
@@ -137,10 +137,11 @@ function newColumn(){
   unhighlightColumn.call($td[0])
   var $input = $('<input type="text">').appendTo($td).focus().on('keyup', function(e){
     var columnName = $.trim($(this).val())
-    // return key saves, escape key aborts
+    // return key saves and creates another column, escape key aborts
     if(e.which == 13 && columnName != ''){
       e.preventDefault()
       saveColumn.call(this, e)
+      newColumn()
     } else if(e.which == 27){
       $td.add('tbody tr td:last-child').remove()
       if(fresh){ showTableSetup() }
@@ -154,11 +155,11 @@ function newColumn(){
       if(fresh){ showTableSetup() }
     }
   }).on('keydown', function(e){
-    // tab key saves and moves to first cell in this new column
+    // tab key saves and creates a new column
     if(e.which == 9){
       e.preventDefault()
-      editCell.call($('tbody tr:first-child td:last-child')[0], e)
-      saveCell.call(this, e)
+      saveColumn.call(this, e)
+      newColumn()
     }
   })
   $('tbody tr').append('<td>')
@@ -182,7 +183,7 @@ function saveColumn(e){
         $('#new-row, #clear-data').fadeIn()
       }
       $th.removeClass('saving').addClass('saved')
-      $('tbody tr td:last-child').attr('data-name', columnName)
+      $th.add('tbody tr td:last-child').attr('data-name', columnName)
       setTimeout(function(){
         $th.removeClass('saved')
       }, 2000)
