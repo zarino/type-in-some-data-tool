@@ -201,3 +201,19 @@ th.deleting .deleteColumn {
   margin-right: -7px;
   opacity: 0.5;
 }
+
+td.type-hint {
+  background-color: #FFFFC7;
+}
+
+.popover.top {
+  margin-top: -5px; /* closer to the cell than bootstrap wants */
+}
+
+.popover-content {
+  padding: 12px 14px;
+}
+
+.popover .btn + .btn {
+  margin-left: 5px;
+}

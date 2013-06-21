@@ -49,6 +49,7 @@ function editCell(e){
   var $td = $(this)
   var originalValue = $(this).text()
   var width = $td.outerWidth()
+  $td.popover('destroy').removeClass('type-hint')
   var $input = $('<input>').attr({ type: 'text', value: originalValue }).on('blur', function(e){
     // on blur, deleted entire row if it is empty, or save if not
     if($.trim($(this).val()) == '' && $.trim($(this).parents('tr').text()) == ''){
@@ -118,6 +119,7 @@ function saveCell(e){
   scraperwiki.exec(cmd, function(output){
     if($.trim(output) == "success"){
       $td.removeClass('saving').addClass('saved')
+      showTypeHint($td)
     } else {
       $td.removeClass('saving').addClass('failed').text( $td.attr('data-originalValue') )
       scraperwiki.alert('Could not save new cell value', 'SQL error: ' + output, 1)
@@ -132,6 +134,45 @@ function saveCell(e){
       $td.removeClass('saved failed')
     }, 2000)
   })
+}
+
+function showTypeHint($td){
+  // Warns the user if they're just added a text
+  // field to a previously all-numeric column
+  if(isNaN($td.text())){
+    var columnName = $td.attr('data-name')
+    var $siblings = $('td[data-name="' + columnName + '"]').not($td).not(':empty')
+    if($siblings.length > 2){
+      var allNumeric = true
+      $siblings.each(function(){
+        if(isNaN($(this).text())){
+          allNumeric = false
+        }
+      })
+      if(allNumeric){
+        $('.popover.type-hint').remove()
+        $('td.type-hint').removeClass('type-hint')
+        $td.addClass('type-hint').popover({
+          html: true,
+          template: '<div class="popover type-hint"><div class="arrow"></div><div class="popover-content"></div></div>',
+          content: '<p>All the other values in this column are numbers. Are you sure you meant to enter text here?</p><p class="text-right"><button class="btn btn-small accept-type-hint">Ooops, no</button> <button class="btn btn-small btn-primary ignore-type-hint">Yes, it&rsquo;s fine</button></p>',
+          placement: 'top',
+          trigger: 'manual',
+          container: 'body'
+        }).popover('show')
+      }
+    }
+  }
+}
+
+function acceptTypeHint(){
+  $td = $('td.type-hint')
+  $td.popover('destroy').removeClass('type-hint').trigger('click')
+}
+
+function ignoreTypeHint(){
+  $td = $('td.type-hint')
+  $td.popover('destroy').removeClass('type-hint')
 }
 
 function newColumn(){
@@ -392,4 +433,6 @@ $(function(){
   $(document).on('click', 'th:not(.placeholder, .saving, .editing)', renameColumn)
   $(document).on('mouseenter', 'th:not(.placeholder, .saving, .editing)', highlightColumn)
   $(document).on('mouseleave', 'th:not(.placeholder)', unhighlightColumn)
+  $(document).on('click', '.accept-type-hint', acceptTypeHint)
+  $(document).on('click', '.ignore-type-hint', ignoreTypeHint)
 });
