@@ -429,7 +429,7 @@ $(function(){
   $('#new-row').on('click', newRow)
   $('#new-column').on('click', newColumn)
   $('#clear-data').on('click', clearData)
-  $(document).on('click', 'td', editCell)
+  $(document).on('click', 'td:not(.saving, .editing)', editCell)
   $(document).on('click', 'th:not(.placeholder, .saving, .editing)', renameColumn)
   $(document).on('mouseenter', 'th:not(.placeholder, .saving, .editing)', highlightColumn)
   $(document).on('mouseleave', 'th:not(.placeholder)', unhighlightColumn)
