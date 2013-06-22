@@ -98,7 +98,8 @@ th.saving {
   background-position: right 10px center; /* for modern browsers */
 }
 
-td.failed {
+td.failed,
+th.failed {
   background-image: url(img/failed.png);
   background-repeat: no-repeat;
   background-position: right center;

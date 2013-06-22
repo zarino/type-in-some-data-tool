@@ -104,14 +104,13 @@ function saveCell(e){
     return true
   }
   var rowId = $(this).parents('tr').children("[data-name='rowid']").text()
-  var sqlTypedValueToSave = '"' + sqlEscape(valueToSave) + '"'
   if(rowId){
     // we're updating a value in an existing record
-    var sql = 'UPDATE "data" SET "' + sqlEscape(columnToSave) + '" = ' + sqlTypedValueToSave + ' WHERE rowid = "' + sqlEscape(rowId) + '";'
+    var sql = 'UPDATE "data" SET ' + sqlEscape(columnToSave, false) + ' = ' + sqlEscape(valueToSave, true) + ' WHERE rowid = ' + sqlEscape(rowId, true) + ';'
   } else {
     // this is a completely new row; generate an incremental rowid, or if this is the first row, start at 1
     var newRowId = parseInt($td.parent().prev().children('td:first-child').text()) + 1 || 1
-    var sql = 'INSERT INTO "data" (rowid, "' + sqlEscape(columnToSave) + '") VALUES (' + newRowId + ', ' + sqlTypedValueToSave + ');'
+    var sql = 'INSERT INTO "data" (rowid, ' + sqlEscape(columnToSave, false) + ') VALUES (' + newRowId + ', ' + sqlEscape(valueToSave, true) + ');'
     $td.parent().children().eq(0).text(newRowId)
   }
   var cmd = 'sqlite3 ~/scraperwiki.sqlite ' + scraperwiki.shellEscape(sql) + ' && echo "success"'
@@ -218,9 +217,9 @@ function saveColumn(e){
   var $th = $(this).parent()
   var columnName = $(this).val()
   if(fresh){
-    var sql = 'CREATE TABLE IF NOT EXISTS "data" ("' + sqlEscape(columnName) + '");'
+    var sql = 'CREATE TABLE IF NOT EXISTS "data" (' + sqlEscape(columnName, false) + ');'
   } else {
-    var sql = 'ALTER TABLE "data" ADD COLUMN "' + sqlEscape(columnName) + '";'
+    var sql = 'ALTER TABLE "data" ADD COLUMN ' + sqlEscape(columnName, false) + ';'
   }
   var cmd = 'sqlite3 ~/scraperwiki.sqlite ' + scraperwiki.shellEscape(sql) + ' && echo "success"'
   $th.removeClass('new editing').addClass('saving').text(columnName)
@@ -367,58 +366,56 @@ function saveColumnName(){
   var newColumns = []
   $('th:visible').each(function(){
     var n = $(this).attr('data-name')
-    oldColumns.push(n)
+    oldColumns.push(sqlEscape(n, false))
     if(n == originalName){
-      newColumns.push(newName)
+      newColumns.push(sqlEscape(newName, false))
     } else {
-      newColumns.push(n)
+      newColumns.push(sqlEscape(n, false))
     }
   })
-  oldColumns = '"' + oldColumns.join('", "') + '"'
-  newColumns = '"' + newColumns.join('", "') + '"'
 
-  var sql = 'BEGIN TRANSACTION; CREATE TEMPORARY TABLE backup(' + oldColumns + '); INSERT INTO backup SELECT ' + oldColumns + ' FROM data; DROP TABLE data; CREATE TABLE data(' + newColumns + '); INSERT INTO data SELECT ' + oldColumns + ' FROM backup; DROP TABLE backup; COMMIT;'
+  var sql = 'BEGIN TRANSACTION; CREATE TEMPORARY TABLE backup(' + oldColumns.join(', ') + '); INSERT INTO backup SELECT ' + oldColumns + ' FROM data; DROP TABLE data; CREATE TABLE data(' + newColumns.join(', ') + '); INSERT INTO data SELECT ' + oldColumns.join(', ') + ' FROM backup; DROP TABLE backup; COMMIT;'
   var cmd = 'sqlite3 ~/scraperwiki.sqlite ' + scraperwiki.shellEscape(sql) + ' && echo "success"'
   $th.removeClass('editing').addClass('saving').css('width', '').text(newName)
   scraperwiki.exec(cmd, function(output){
     if($.trim(output) == "success"){
       $th.removeClass('saving').addClass('saved')
       $('[data-name="' + originalName + '"]').attr('data-name', newName)
-      setTimeout(function(){
-        $th.removeClass('saved')
-      }, 2000)
     } else {
-      $th.removeClass('editing').css('width', '').text(originalName)
+      $th.removeClass('saving').addClass('failed').css('width', '').text(originalName)
       scraperwiki.alert('Could not rename column', 'SQL error: ' + output, 1)
     }
+    setTimeout(function(){
+      $th.removeClass('saved failed')
+    }, 2000)
   }, function(error){
-    $th.removeClass('editing').css('width', '').text(originalName)
+    $th.removeClass('saving').addClass('failed').css('width', '').text(originalName)
     scraperwiki.alert('Could not rename column', error.status + ' ' + error.statusText + ', ' + error.responseText, 1)
+    setTimeout(function(){
+      $th.removeClass('saved failed')
+    }, 2000)
   })
 }
 
-function sqlEscape(str) {
-  return str.replace(/[\0\x08\x09\x1a\n\r"'\\\%]/g, function(char) {
-    switch (char) {
-      case "\0":
-        return "\\0";
-      case "\x08":
-        return "\\b";
-      case "\x09":
-        return "\\t";
-      case "\x1a":
-        return "\\z";
-      case "\n":
-        return "\\n";
-      case "\r":
-        return "\\r";
-      case "\"":
-      case "'":
-      case "\\":
-      case "%":
-        return "\\"+char;
-    }
-  })
+function sqlEscape(str, literal) {
+  if(literal){
+    quote = "'" // set literal to true for strings you're inserting into a table
+    singleQuote = "''"
+    doubleQuote = '"'
+  } else {
+    quote = '"' // set literal to false for column and table names
+    singleQuote = "'"
+    doubleQuote = '""'
+  }
+  if(str == '' || str == null){
+    return 'NULL'
+  } else if(isNaN(str)){
+    str = str.replace(/[']/g, singleQuote)
+    str = str.replace(/["]/g, doubleQuote)
+    return quote + str + quote
+  } else {
+    return str
+  }
 }
 
 var fresh = false
