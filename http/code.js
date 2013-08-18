@@ -246,16 +246,6 @@ function deleteRow(){
   })
 }
 
-function highlightColumn(e){
-  var eq = $(this).index() + 1
-  $('th:nth-child(' + eq + '), td:nth-child(' + eq + ')').addClass('highlighted')
-}
-
-function unhighlightColumn(e){
-  var eq = $(this).index() + 1
-  $('th:nth-child(' + eq + '), td:nth-child(' + eq + ')').removeClass('highlighted')
-}
-
 function renameColumn(e){
   // ignore clicks from any of the table header's children (eg: a.deleteColumn)
   if(e.target.tagName != 'TH'){ return false }
@@ -327,9 +317,48 @@ function saveColumnName(){
   })
 }
 
+function showColumnDeleter(){
+  var $s = $('<span>').addClass('delete-column')
+  $(this).prepend($s)
+}
+
+function hideColumnDeleter(){
+  $(this).find('.delete-column').remove()
+}
+
+function highlightColumn(e){
+  var eq = $(this).index() + 1
+  $('th:nth-child(' + eq + '), td:nth-child(' + eq + ')').addClass('highlighted')
+}
+
+function unhighlightColumn(e){
+  var eq = $(this).index() + 1
+  $('th:nth-child(' + eq + '), td:nth-child(' + eq + ')').removeClass('highlighted')
+}
+
+function endangerColumn(){
+  var eq = $(this).parent().index() + 1
+  $('th:nth-child(' + eq + '), tbody td:nth-child(' + eq + ')').addClass('endangered')
+}
+
+function unendangerColumn(){
+  var eq = $(this).parent().index() + 1
+  $('th:nth-child(' + eq + '), tbody td:nth-child(' + eq + ')').removeClass('endangered')
+}
+
+function endangerRow(){
+  $(this).add($(this).nextUntil('.new-column')).addClass('endangered')
+}
+
+function unendangerRow(){
+  $(this).add($(this).nextUntil('.new-column')).removeClass('endangered')
+}
+
 function deleteColumn(){
   setStatus('saving')
   var $th = $(this).parent('th')
+  var eq = $th.index() + 1
+  var $column = $('th:nth-child(' + eq + '), tbody td:nth-child(' + eq + ')')
   var cols = []
   $('th:visible').not($th).not('[data-column="rowid"], .new-column').each(function(){
     cols.push($(this).text())
@@ -337,19 +366,23 @@ function deleteColumn(){
   cols = '"' + cols.join('", "') + '"'
   var sql = 'BEGIN TRANSACTION; CREATE TEMPORARY TABLE backup(' + cols + '); INSERT INTO backup SELECT ' + cols + ' FROM data; DROP TABLE data; CREATE TABLE data(' + cols + '); INSERT INTO data SELECT ' + cols + ' FROM backup; DROP TABLE backup; COMMIT;'
   var cmd = 'sqlite3 ~/scraperwiki.sqlite ' + scraperwiki.shellEscape(sql) + ' && echo "success"'
+  $column.hide()
+  incrementFooterColspan(-1)
   scraperwiki.exec(cmd, function(output){
     if($.trim(output) == "success"){
       $column.remove()
       setStatus('saved')
     } else {
-      $th.removeClass('deleting').children('a').remove()
-      $column.removeClass('highlighted')
+      $column.show()
+      $th.children('.delete-column').remove()
+      incrementFooterColspan(1)
       scraperwiki.alert('Could not delete column', 'SQL error: ' + output, 1)
       setStatus('')
     }
   }, function(error){
-    $th.removeClass('deleting').children('a').remove()
-    $column.removeClass('highlighted')
+    $column.show()
+    $th.children('.delete-column').remove()
+    incrementFooterColspan(1)
     scraperwiki.alert('Could not delete column', error.status + ' ' + error.statusText + ', ' + error.responseText, 1)
     setStatus('')
   })
@@ -417,9 +450,25 @@ populateTable()
 $(function(){
   $(document).on('click', '.new-row', newRow)
   $(document).on('click', '.new-column', newColumn)
+
   $(document).on('click', 'tbody td:first-child', deleteRow)
+  $(document).on('click', '.delete-column', deleteColumn)
+
   $(document).on('click', 'td:not(.editing, .new-row, .new-column, :first-child)', editCell)
   $(document).on('click', 'th:not(.placeholder, .editing, .new-column, :first-child)', renameColumn)
-  $(document).on('mouseenter', 'th, .new-column', highlightColumn)
-  $(document).on('mouseleave', 'th, .new-column', unhighlightColumn)
+
+  $(document).on('mouseenter', 'th:not(:first-child)', highlightColumn)
+  $(document).on('mouseleave', 'th:not(:first-child)', unhighlightColumn)
+  $(document).on('mouseenter', '.new-column', highlightColumn)
+  $(document).on('mouseleave', '.new-column', unhighlightColumn)
+
+  $(document).on('mouseenter', 'th:not(:first-child)', showColumnDeleter)
+  $(document).on('mouseleave', 'th:not(:first-child)', hideColumnDeleter)
+
+  $(document).on('mouseenter', '.delete-column', endangerColumn)
+  $(document).on('mouseleave', '.delete-column', unendangerColumn)
+
+  $(document).on('mouseenter', 'tbody td:first-child', endangerRow)
+  $(document).on('mouseleave', 'tbody td:first-child', unendangerRow)
+
 });

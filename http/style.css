@@ -99,25 +99,9 @@ tbody td:first-child:before {
     counter-increment: tr;
 }
 
-tbody td:first-child:hover,
-tbody td:first-child:hover ~ td {
-    background: transparent url(img/slash.png) 50% 50% no-repeat;
-    border-top: 1px solid #ff9d9d;
-    border-bottom: 1px solid #ff9d9d;
-}
-
 tbody td:first-child:hover {
-    background-color: #ffb6b6 !important;
-    border-right-color: #ff9d9d;
-}
-
-tbody td:first-child:hover ~ td {
-    background-color: #ffd0d0 !important;
-    background-image: none;
-}
-
-tbody td:first-child:hover:before {
-    content: "";
+    background: #ffb6b6 url(img/slash.png) 50% 50% no-repeat;
+    color: transparent;
 }
 
 
@@ -216,6 +200,44 @@ th textarea {
   -webkit-border-radius: 0;
   -moz-border-radius: 0;
   border-radius: 0;
+}
+
+
+
+/* Deleting columns and rows */
+
+.delete-column {
+  display: block;
+  float: right;
+  height: 40px;
+  width: 40px;
+  margin: -8px -8px -8px -40px;
+  background: transparent url(img/slash.png) 50% 50% no-repeat;
+  cursor: pointer;
+}
+
+.delete-column:hover {
+  background-color: #ffb6b6;
+  border-left: 1px solid #ff9d9d;
+  margin-left: -41px;
+}
+
+th.endangered,
+td.endangered:first-child,
+tbody > tr:nth-child(odd) > td.endangered:first-child {
+  background-color: #ffb6b6;
+}
+
+td.endangered:first-child {
+  border-right-color: #ff9d9d;
+}
+
+th.endangered,
+td.endangered,
+.table-striped tbody > tr:nth-child(odd) > td.endangered {
+  border-color: #ff9d9d;
+  border-bottom: 1px solid #ff9d9d;
+  background-color: #ffd0d0;
 }
 
 
