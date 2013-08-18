@@ -4,7 +4,10 @@ function populateTable(){
     if('data' in meta.table){
       // Yes! There's a table. Make the header row.
       var $tr = $('<tr>').appendTo('thead')
-      $tr.append('<th data-column="rowid"></th>')
+      $tr.append('<th data-column="rowid">#</th>')
+      var $tf = $('<tr>').appendTo('tfoot')
+      $tf.append('<td data-column="rowid" class="new-row">+</td>')
+      $tf.append('<td class="new-row" colspan="' + meta.table.data.columnNames.length + '"></td>')
       $.each(meta.table.data.columnNames, function(i, colName){
         $tr.append('<th data-column="' + colName + '">' + colName + '</th>')
       })
@@ -116,7 +119,7 @@ function saveCell(e){
     // this is a completely new row; generate an incremental rowid, or if this is the first row, start at 1
     var newRowId = parseInt($td.parent().prev().children('td:first-child').attr('data-row')) + 1 || 1
     var sql = 'INSERT INTO "data" (rowid, ' + sqlEscape(columnToSave, false) + ') VALUES (' + newRowId + ', ' + sqlEscape(valueToSave, true) + ');'
-    $td.parent().children().eq(0).text(newRowId)
+    $td.parent().children().attr('data-row', newRowId)
   }
   var cmd = 'sqlite3 ~/scraperwiki.sqlite ' + scraperwiki.shellEscape(sql) + ' && echo "success"'
   $td.removeClass('editing').css('width', '').text(valueToSave)
@@ -211,8 +214,11 @@ function newRow(){
   var $tr = $('<tr class="new">').appendTo('tbody')
   $('thead th').each(function(){
     var columnName = $(this).text()
+    // the first column should be called rowid, not #
+    if(columnName == '#'){ columnName = 'rowid' }
     $tr.append('<td data-column="' + columnName + '">')
   })
+  // begin editing the first cell (skipping the rowid cell at .eq(0))
   editCell.call($tr.children().eq(1)[0])
 }
 
@@ -387,10 +393,10 @@ var fresh = false
 populateTable()
 
 $(function(){
-  $('#new-row').on('click', newRow)
-  $('#new-column').on('click', newColumn)
-  $(document).on('click', 'td:not(.editing)', editCell)
-  $(document).on('click', 'th:not(.placeholder, .editing)', renameColumn)
+  $(document).on('click', '.new-row', newRow)
+  $(document).on('click', '.new-column', newColumn)
+  $(document).on('click', 'td:not(.editing, .new-row, .new-column)', editCell)
+  $(document).on('click', 'th:not(.placeholder, .editing, .new-column)', renameColumn)
   $(document).on('mouseenter', 'th', highlightColumn)
   $(document).on('mouseleave', 'th', unhighlightColumn)
 });

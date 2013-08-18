@@ -29,7 +29,6 @@ section {
 
 .table {
   margin: 0;
-  border-bottom: 1px solid #ddd;
   counter-reset: tr;
 }
 
@@ -68,7 +67,7 @@ th:hover {
 }
 
 .table-striped tbody > tr:nth-child(odd) > td:hover {
-  background-color: #E7F2F7; 
+  background-color: #E7F2F7;
 }
 
 
@@ -78,46 +77,65 @@ th:hover {
 th:first-child,
 td:first-child {
   border-right: 1px solid #ddd;
+  width: 18px;
+  cursor: pointer;
+  text-align: center;
+  color: #aaa;
 }
 
 th:first-child {
     cursor: auto;
     background: transparent;
+    font-weight: normal;
 }
 
-td:first-child {
-    width: 18px;
-    cursor: pointer;
-    text-align: center;
-    color: #aaa;
-}
-
-td:first-child:before {
+tbody td:first-child:before {
     content: counter(tr);
     counter-increment: tr;
 }
 
-td:first-child:hover,
-td:first-child:hover ~ td {
+tbody td:first-child:hover,
+tbody td:first-child:hover ~ td {
     background: transparent url(img/slash.png) 50% 50% no-repeat;
     border-top: 1px solid #ff9d9d;
     border-bottom: 1px solid #ff9d9d;
 }
 
-td:first-child:hover {
+tbody td:first-child:hover {
     background-color: #ffb6b6 !important;
     border-right-color: #ff9d9d;
 }
 
-td:first-child:hover ~ td {
+tbody td:first-child:hover ~ td {
     background-color: #ffd0d0 !important;
     background-image: none;
 }
 
-td:first-child:hover:before {
+tbody td:first-child:hover:before {
     content: "";
 }
 
+tfoot td:first-child {
+  font-weight: bold;
+}
+
+tfoot td,
+tfoot td:hover {
+  cursor: pointer;
+  color: #aaa;
+  background-color: transparent;
+  border-bottom: 1px solid #ddd;
+}
+
+tfoot tr:hover td {
+  background-color: #c8f6c8;
+  border-color: #9ACE9A;
+}
+
+tfoot tr:hover td:first-child {
+  background-color: #acf0ac;
+  color: #3d8c3d;
+}
 
 
 /* Editing cells */
