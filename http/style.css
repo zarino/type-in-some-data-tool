@@ -125,7 +125,8 @@ tbody td:first-child:hover:before {
 /* "New row" row at the bottom */
 
 tfoot td:first-child {
-  font-weight: bold;
+  font-size: 20px;
+  padding: 6px 8px 10px 8px;
 }
 
 tfoot td:last-child {
@@ -146,8 +147,8 @@ tfoot tr:hover td {
 }
 
 tfoot tr:hover td:first-child {
-  background-color: #acf0ac;
-  color: #3d8c3d;
+  background: #acf0ac url(img/plus.png) 50% 50% no-repeat;
+  color: transparent;
 }
 
 
@@ -168,6 +169,9 @@ th.new-column,
 
 th.new-column {
   border-bottom: 1px solid #ddd;
+  font-weight: normal;
+  font-size: 20px;
+  padding: 6px 8px 10px 8px;
 }
 
 td.new-column.highlighted,
@@ -178,8 +182,8 @@ tbody > tr:nth-child(odd) > td.new-column.highlighted {
 }
 
 th.new-column.highlighted {
-  background-color: #acf0ac;
-  color: #3d8c3d;
+  background: #acf0ac url(img/plus.png) 50% 50% no-repeat;
+  color: transparent;
 }
 
 
