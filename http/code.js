@@ -3,35 +3,41 @@ function populateTable(){
   scraperwiki.sql.meta(function(meta){
     if('data' in meta.table){
       // Yes! There's a table. Make the header row.
-      $('#new-row, #clear-data').show()
       var $tr = $('<tr>').appendTo('thead')
-      $tr.append('<th data-name="rowid">rowid</th>')
+      $tr.append('<th data-column="rowid"></th>')
       $.each(meta.table.data.columnNames, function(i, colName){
-        $tr.append('<th data-name="' + colName + '">' + colName + '</th>')
+        $tr.append('<th data-column="' + colName + '">' + colName + '</th>')
       })
       // Is there any data in that table?
-      scraperwiki.sql('select rowid, * from "data" order by rowid', function(data){
+      scraperwiki.sql('SELECT rowid, * FROM "data" ORDER BY "rowid"', function(data){
         if(data.length){
           // Yes! Append all the rows to the table.
           $.each(data, function(i, row){
             var $tr = $('<tr>').appendTo('tbody')
             $.each(row, function(cellName, cellValue){
+              if(cellName == 'rowid'){
+                var cellValue = ''
+              }
               if(cellValue == null){
                 var cellValue = ''
               }
-              $tr.append('<td data-name="' + cellName + '">' + cellValue + '</td>')
+              $tr.append('<td data-column="' + cellName + '" data-row="' + row['rowid'] + '">' + cellValue + '</td>')
             })
           })
+          setStatus('loaded')
         }
       }, function(error){
         scraperwiki.alert('An unexpected error occurred', error.status + ' ' + error.statusText + ', ' + error.responseText, 1)
+        setStatus('')
       })
     } else {
       // D'oh, no table yet!
       showTableSetup()
+      setStatus('')
     }
   }, function(error){
     // D'oh, no database yet!
+    setStatus('')
     if(error.responseText.indexOf("database file does not exist") !== -1){
       showTableSetup()
     } else {
@@ -42,23 +48,25 @@ function populateTable(){
 
 function showTableSetup(){
   fresh = true
-  $('<p id="first-column-hint">Click here to create<br/>your first column<i class="icon-chevron-up"></i></p>').hide().appendTo('body').fadeIn().on('click', newColumn)
+  console.log('create a starter table here')
 }
 
 function editCell(e){
   var $td = $(this)
-  var originalValue = $(this).text()
+  var originalValue = $td.text()
   var width = $td.outerWidth()
-  $td.popover('destroy').removeClass('type-hint')
-  var $input = $('<input>').attr({ type: 'text', value: originalValue }).on('blur', function(e){
+  var $input = $('<textarea>').text(originalValue).on('blur', function(e){
     // on blur, deleted entire row if it is empty, or save if not
     if($.trim($(this).val()) == '' && $.trim($(this).parents('tr').text()) == ''){
       $(this).parents('tr').remove()
     } else {
       saveCell.call(this, e)
     }
-  }).on('keyup', function(e){
-    // return key saves, escape key aborts
+  }).on('keydown', function(e){
+    // return key saves
+    // escape key aborts
+    // tab key moves to next cell (blurring and saving the current cell)
+    // shift-tab moved to previous cell (blurrand and saving as above)
     if(e.which == 13){
       e.preventDefault()
       saveCell.call(this, e)
@@ -69,11 +77,7 @@ function editCell(e){
       } else {
         $(this).parent().removeClass('editing').css('width', '').text(originalValue)
       }
-    }
-  }).on('keydown', function(e){
-    // tab key moves to next cell
-    // (the consequent blur will save current cell)
-    if(e.which == 9){
+    } else if(e.which == 9){
       e.preventDefault()
       if(e.shiftKey){
         if($(this).parent().prev(':visible').length){
@@ -96,82 +100,39 @@ function editCell(e){
 
 function saveCell(e){
   var $td = $(this).parent()
-  var columnToSave = $td.attr('data-name')
+  var columnToSave = $td.attr('data-column')
   var valueToSave = $(this).val()
   var originalValue = $td.attr('data-originalValue')
   if(valueToSave == originalValue){
     $td.removeClass('editing').css('width', '').text(originalValue)
     return true
   }
-  var rowId = $(this).parents('tr').children("[data-name='rowid']").text()
+  setStatus('saving')
+  var rowId = $td.attr('data-row')
   if(rowId){
     // we're updating a value in an existing record
     var sql = 'UPDATE "data" SET ' + sqlEscape(columnToSave, false) + ' = ' + sqlEscape(valueToSave, true) + ' WHERE rowid = ' + sqlEscape(rowId, true) + ';'
   } else {
     // this is a completely new row; generate an incremental rowid, or if this is the first row, start at 1
-    var newRowId = parseInt($td.parent().prev().children('td:first-child').text()) + 1 || 1
+    var newRowId = parseInt($td.parent().prev().children('td:first-child').attr('data-row')) + 1 || 1
     var sql = 'INSERT INTO "data" (rowid, ' + sqlEscape(columnToSave, false) + ') VALUES (' + newRowId + ', ' + sqlEscape(valueToSave, true) + ');'
     $td.parent().children().eq(0).text(newRowId)
   }
   var cmd = 'sqlite3 ~/scraperwiki.sqlite ' + scraperwiki.shellEscape(sql) + ' && echo "success"'
-  $td.removeClass('editing').addClass('saving').css('width', '').text(valueToSave)
+  $td.removeClass('editing').css('width', '').text(valueToSave)
   scraperwiki.exec(cmd, function(output){
     if($.trim(output) == "success"){
-      $td.removeClass('saving').addClass('saved')
-      showTypeHint($td)
+      setStatus('saved')
     } else {
-      $td.removeClass('saving').addClass('failed').text( $td.attr('data-originalValue') )
+      $td.text( $td.attr('data-originalValue') )
       scraperwiki.alert('Could not save new cell value', 'SQL error: ' + output, 1)
+      setStatus('')
     }
-    setTimeout(function(){
-      $td.removeClass('saved failed')
-    }, 2000)
   }, function(error){
     $td.removeClass('saving').addClass('failed').text( $td.attr('data-originalValue') )
     scraperwiki.alert('Could not save new cell value', error.status + ' ' + error.statusText + ', ' + error.responseText, 1)
-    setTimeout(function(){
-      $td.removeClass('saved failed')
-    }, 2000)
+    setStatus('')
   })
-}
-
-function showTypeHint($td){
-  // Warns the user if they're just added a text
-  // field to a previously all-numeric column
-  if(isNaN($td.text())){
-    var columnName = $td.attr('data-name')
-    var $siblings = $('td[data-name="' + columnName + '"]').not($td).not(':empty')
-    if($siblings.length > 2){
-      var allNumeric = true
-      $siblings.each(function(){
-        if(isNaN($(this).text())){
-          allNumeric = false
-        }
-      })
-      if(allNumeric){
-        $('.popover.type-hint').remove()
-        $('td.type-hint').removeClass('type-hint')
-        $td.addClass('type-hint').popover({
-          html: true,
-          template: '<div class="popover type-hint"><div class="arrow"></div><div class="popover-content"></div></div>',
-          content: '<p>All the other values in this column are numbers. Are you sure you meant to enter text here?</p><p class="text-right"><button class="btn btn-small accept-type-hint">Ooops, no</button> <button class="btn btn-small btn-primary ignore-type-hint">Yes, it&rsquo;s fine</button></p>',
-          placement: 'top',
-          trigger: 'manual',
-          container: 'body'
-        }).popover('show')
-      }
-    }
-  }
-}
-
-function acceptTypeHint(){
-  $td = $('td.type-hint')
-  $td.popover('destroy').removeClass('type-hint').trigger('click')
-}
-
-function ignoreTypeHint(){
-  $td = $('td.type-hint')
-  $td.popover('destroy').removeClass('type-hint')
 }
 
 function newColumn(){
@@ -214,6 +175,7 @@ function newColumn(){
 }
 
 function saveColumn(e){
+  setStatus('saving')
   var $th = $(this).parent()
   var columnName = $(this).val()
   if(fresh){
@@ -222,28 +184,26 @@ function saveColumn(e){
     var sql = 'ALTER TABLE "data" ADD COLUMN ' + sqlEscape(columnName, false) + ';'
   }
   var cmd = 'sqlite3 ~/scraperwiki.sqlite ' + scraperwiki.shellEscape(sql) + ' && echo "success"'
-  $th.removeClass('new editing').addClass('saving').text(columnName)
+  $th.removeClass('new editing').text(columnName)
   scraperwiki.exec(cmd, function(output){
     if($.trim(output) == "success"){
       if(fresh){
         fresh = false
-        $th.before('<th data-name="rowid">rowid</th>')
-        $('#new-row, #clear-data').fadeIn()
+        $th.before('<th data-column="rowid">rowid</th>')
       }
-      $th.removeClass('saving').addClass('saved')
-      $th.add('tbody tr td:last-child').attr('data-name', columnName)
-      setTimeout(function(){
-        $th.removeClass('saved')
-      }, 2000)
+      setStatus('saved')
+      $th.add('tbody tr td:last-child').attr('data-column', columnName)
     } else {
       $th.add('tbody tr td:last-child').remove()
       if(fresh){ showTableSetup() }
       scraperwiki.alert('Could not create new column', 'SQL error: ' + output, 1)
+      setStatus('')
     }
   }, function(error){
     $th.add('tbody tr td:last-child').remove()
     if(fresh){ showTableSetup() }
     scraperwiki.alert('Could not create new column', error.status + ' ' + error.statusText + ', ' + error.responseText, 1)
+    setStatus('')
   })
 }
 
@@ -251,36 +211,9 @@ function newRow(){
   var $tr = $('<tr class="new">').appendTo('tbody')
   $('thead th').each(function(){
     var columnName = $(this).text()
-    $tr.append('<td data-name="' + columnName + '">')
+    $tr.append('<td data-column="' + columnName + '">')
   })
   editCell.call($tr.children().eq(1)[0])
-}
-
-function clearData(e){
-  e.stopPropagation()
-  var $btn = $(this)
-  if($btn.hasClass('btn-danger')){
-    var sql = 'DROP TABLE "data";'
-    var cmd = 'sqlite3 ~/scraperwiki.sqlite ' + scraperwiki.shellEscape(sql) + ' && echo "success"'
-    $btn.addClass('loading').html('Clearing data&hellip;')
-    scraperwiki.exec(cmd, function(output){
-      if($.trim(output) == "success"){
-        window.location.reload()
-      } else {
-        $btn.removeClass('loading really').html('<img src="img/slash.png" width="16" height="16" alt=""> Clear all data')
-        scraperwiki.alert('Could not clear data', 'SQL error: ' + output, 1)
-      }
-    }, function(error){
-      $btn.removeClass('loading really').html('<img src="img/slash.png" width="16" height="16" alt=""> Clear all data')
-      scraperwiki.alert('Could not clear data', error.status + ' ' + error.statusText + ', ' + error.responseText, 1)
-    })
-  } else {
-    $btn.addClass('btn-danger').html('<img src="img/tick-white.png" width="16" height="16" alt=""> <b>Yes</b> I&rsquo;m sure')
-    $('body').on('click.danger', function(){
-      $btn.removeClass('btn-danger').html('<img src="img/slash.png" width="16" height="16" alt=""> Clear all data')
-      $('body').off('click.danger')
-    })
-  }
 }
 
 function highlightColumn(e){
@@ -289,29 +222,7 @@ function highlightColumn(e){
   var eq = $th.index() + 1
   var $column = $('td:nth-child(' + eq + ')').add($th)
   $column.addClass('highlighted')
-  var $a = $('<a class="deleteColumn" title="Delete this column"></a>').on('click', function(){
-    $th.addClass('deleting')
-    var cols = []
-    $('th:visible').not($th).each(function(){
-      cols.push($(this).text())
-    })
-    cols = '"' + cols.join('", "') + '"'
-    var sql = 'BEGIN TRANSACTION; CREATE TEMPORARY TABLE backup(' + cols + '); INSERT INTO backup SELECT ' + cols + ' FROM data; DROP TABLE data; CREATE TABLE data(' + cols + '); INSERT INTO data SELECT ' + cols + ' FROM backup; DROP TABLE backup; COMMIT;'
-    var cmd = 'sqlite3 ~/scraperwiki.sqlite ' + scraperwiki.shellEscape(sql) + ' && echo "success"'
-    scraperwiki.exec(cmd, function(output){
-      if($.trim(output) == "success"){
-        $column.remove()
-      } else {
-        $th.removeClass('deleting').children('a').remove()
-        $column.removeClass('highlighted')
-        scraperwiki.alert('Could not delete column', 'SQL error: ' + output, 1)
-      }
-    }, function(error){
-        $th.removeClass('deleting').children('a').remove()
-        $column.removeClass('highlighted')
-      scraperwiki.alert('Could not delete column', error.status + ' ' + error.statusText + ', ' + error.responseText, 1)
-    })
-  }).appendTo($th)
+  $('<a class="deleteColumn" title="Delete this column"></a>').on('click', deleteColumn).appendTo($th)
 }
 
 function unhighlightColumn(e){
@@ -328,28 +239,26 @@ function renameColumn(e){
   var $th = $(this)
   unhighlightColumn.call($th[0])
 
-  var originalName = $th.attr('data-name')
+  var originalName = $th.attr('data-column')
   var width = $th.outerWidth()
   $th.addClass('editing').css('width', width).empty()
-  var $input = $('<input>').attr({ type: 'text', value: originalName }).on('blur', function(e){
-    // on blur, deleted entire row if it is empty, or save if not
+  var $input = $('<textarea>').text(originalName).on('blur', function(e){
     var newName = $.trim($(this).val())
     if(newName == originalName || newName == ''){
       $(this).parent().removeClass('editing').css('width', '').text(originalName)
     } else {
       saveColumnName.call(this, e)
     }
-  }).on('keyup', function(e){
-    // return key saves, escape key aborts
+  }).on('keydown', function(e){
+    // return key saves
+    // escape key aborts
+    // tab key saves and moves to next cell
     if(e.which == 13){
       e.preventDefault()
       saveColumnName.call(this, e)
     } else if(e.which == 27){
       $(this).parent().removeClass('editing').css('width', '').text(originalName)
-    }
-  }).on('keydown', function(e){
-    // tab key saves and moves to next cell
-    if(e.which == 9){
+    } else if(e.which == 9){
       e.preventDefault()
       saveColumnName.call(this, e)
     }
@@ -360,12 +269,12 @@ function renameColumn(e){
 function saveColumnName(){
   var $th = $(this).parent()
   var newName = $(this).val()
-  var originalName = $th.attr('data-name')
+  var originalName = $th.attr('data-column')
 
   var oldColumns = []
   var newColumns = []
   $('th:visible').each(function(){
-    var n = $(this).attr('data-name')
+    var n = $(this).attr('data-column')
     oldColumns.push(sqlEscape(n, false))
     if(n == originalName){
       newColumns.push(sqlEscape(newName, false))
@@ -376,25 +285,80 @@ function saveColumnName(){
 
   var sql = 'BEGIN TRANSACTION; CREATE TEMPORARY TABLE backup(' + oldColumns.join(', ') + '); INSERT INTO backup SELECT ' + oldColumns + ' FROM data; DROP TABLE data; CREATE TABLE data(' + newColumns.join(', ') + '); INSERT INTO data SELECT ' + oldColumns.join(', ') + ' FROM backup; DROP TABLE backup; COMMIT;'
   var cmd = 'sqlite3 ~/scraperwiki.sqlite ' + scraperwiki.shellEscape(sql) + ' && echo "success"'
-  $th.removeClass('editing').addClass('saving').css('width', '').text(newName)
+  $th.removeClass('editing').css('width', '').text(newName)
+  setStatus('saving')
   scraperwiki.exec(cmd, function(output){
     if($.trim(output) == "success"){
-      $th.removeClass('saving').addClass('saved')
-      $('[data-name="' + originalName + '"]').attr('data-name', newName)
+      setStatus('saved')
+      $('[data-column="' + originalName + '"]').attr('data-column', newName)
     } else {
       $th.removeClass('saving').addClass('failed').css('width', '').text(originalName)
       scraperwiki.alert('Could not rename column', 'SQL error: ' + output, 1)
+      setStatus('')
     }
-    setTimeout(function(){
-      $th.removeClass('saved failed')
-    }, 2000)
   }, function(error){
     $th.removeClass('saving').addClass('failed').css('width', '').text(originalName)
     scraperwiki.alert('Could not rename column', error.status + ' ' + error.statusText + ', ' + error.responseText, 1)
-    setTimeout(function(){
-      $th.removeClass('saved failed')
-    }, 2000)
+    setStatus('')
   })
+}
+
+function deleteColumn(){
+  setStatus('saving')
+  var $th = $(this).parent('th')
+  $th.addClass('deleting')
+  var cols = []
+  $('th:visible').not($th).not('[data-column="rowid"]').each(function(){
+    cols.push($(this).text())
+  })
+  cols = '"' + cols.join('", "') + '"'
+  var sql = 'BEGIN TRANSACTION; CREATE TEMPORARY TABLE backup(' + cols + '); INSERT INTO backup SELECT ' + cols + ' FROM data; DROP TABLE data; CREATE TABLE data(' + cols + '); INSERT INTO data SELECT ' + cols + ' FROM backup; DROP TABLE backup; COMMIT;'
+  var cmd = 'sqlite3 ~/scraperwiki.sqlite ' + scraperwiki.shellEscape(sql) + ' && echo "success"'
+  scraperwiki.exec(cmd, function(output){
+    if($.trim(output) == "success"){
+      $column.remove()
+      setStatus('saved')
+    } else {
+      $th.removeClass('deleting').children('a').remove()
+      $column.removeClass('highlighted')
+      scraperwiki.alert('Could not delete column', 'SQL error: ' + output, 1)
+      setStatus('')
+    }
+  }, function(error){
+    $th.removeClass('deleting').children('a').remove()
+    $column.removeClass('highlighted')
+    scraperwiki.alert('Could not delete column', error.status + ' ' + error.statusText + ', ' + error.responseText, 1)
+    setStatus('')
+  })
+}
+
+function setStatus(status){
+  if(!status){
+    $('#status').fadeOut(function(){
+      $(this).text('').show()
+    })
+    return true
+  } else if(status=='loading'){
+    var html = 'Loading&hellip;'
+  } else if(status=='loaded'){
+    var html = 'Loaded'
+    setTimeout(function(){
+      if($('#status').html()=='Loaded'){ setStatus('') }
+    }, 2000)
+  } else if(status=='saving'){
+    var html = 'Saving&hellip;'
+  } else if(status=='saved'){
+    var html = 'Saved'
+    setTimeout(function(){
+      if($('#status').html()=='Saved'){ setStatus('') }
+    }, 2000)
+  }
+  $('#status').stop().html(html).show()
+  if(status=='loading' || status=='saving'){
+    $('#status').addClass('working')
+  } else {
+    $('#status').removeClass('working')
+  }
 }
 
 function sqlEscape(str, literal) {
@@ -425,11 +389,8 @@ populateTable()
 $(function(){
   $('#new-row').on('click', newRow)
   $('#new-column').on('click', newColumn)
-  $('#clear-data').on('click', clearData)
-  $(document).on('click', 'td:not(.saving, .editing)', editCell)
-  $(document).on('click', 'th:not(.placeholder, .saving, .editing)', renameColumn)
-  $(document).on('mouseenter', 'th:not(.placeholder, .saving, .editing)', highlightColumn)
-  $(document).on('mouseleave', 'th:not(.placeholder)', unhighlightColumn)
-  $(document).on('click', '.accept-type-hint', acceptTypeHint)
-  $(document).on('click', '.ignore-type-hint', ignoreTypeHint)
+  $(document).on('click', 'td:not(.editing)', editCell)
+  $(document).on('click', 'th:not(.placeholder, .editing)', renameColumn)
+  $(document).on('mouseenter', 'th', highlightColumn)
+  $(document).on('mouseleave', 'th', unhighlightColumn)
 });
