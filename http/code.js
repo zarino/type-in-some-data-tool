@@ -213,12 +213,13 @@ function saveColumn(e){
 
 function newRow(){
   var $tr = $('<tr class="new">').appendTo('tbody')
-  $('thead th').each(function(){
+  $('thead th').not('.new-column').each(function(){
     var columnName = $(this).text()
     // the first column should be called rowid, not #
     if(columnName == '#'){ columnName = 'rowid' }
     $tr.append('<td data-column="' + columnName + '">')
   })
+  $tr.append('<td class="new-column">')
   // begin editing the first cell (skipping the rowid cell at .eq(0))
   editCell.call($tr.children().eq(1)[0])
 }
