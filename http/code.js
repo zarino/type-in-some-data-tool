@@ -8,9 +8,11 @@ function populateTable(){
       var $tf = $('<tr>').appendTo('tfoot')
       $tf.append('<td data-column="rowid" class="new-row">+</td>')
       $tf.append('<td class="new-row" colspan="' + meta.table.data.columnNames.length + '"></td>')
+      $tf.append('<td class="new-row"></td>')
       $.each(meta.table.data.columnNames, function(i, colName){
         $tr.append('<th data-column="' + colName + '">' + colName + '</th>')
       })
+      $tr.append('<th class="new-column">+</th>')
       // Is there any data in that table?
       scraperwiki.sql('SELECT rowid, * FROM "data" ORDER BY "rowid"', function(data){
         if(data.length){
@@ -26,6 +28,7 @@ function populateTable(){
               }
               $tr.append('<td data-column="' + cellName + '" data-row="' + row['rowid'] + '">' + cellValue + '</td>')
             })
+            $tr.append('<td class="new-column"></td>')
           })
           setStatus('loaded')
         }
@@ -139,42 +142,38 @@ function saveCell(e){
 }
 
 function newColumn(){
-  $('#first-column-hint').remove()
-  if($('thead tr').length){
-    var $tr = $('thead tr')
-  } else {
-    var $tr = $('<tr>').appendTo('thead')
-  }
-  var $td = $('<th class="new editing">').appendTo($tr)
+  var $td = $('<th class="new editing">').insertBefore('thead .new-column')
   unhighlightColumn.call($td[0])
-  var $input = $('<input type="text">').appendTo($td).focus().on('keyup', function(e){
-    var columnName = $.trim($(this).val())
-    // return key saves and creates another column, escape key aborts
-    if(e.which == 13 && columnName != ''){
-      e.preventDefault()
-      saveColumn.call(this, e)
-      newColumn()
-    } else if(e.which == 27){
-      $td.add('tbody tr td:last-child').remove()
-      if(fresh){ showTableSetup() }
-    }
-  }).on('blur', function(e){
+  var $input = $('<textarea>').appendTo($td).focus().on('blur', function(e){
     var columnName = $.trim($(this).val())
     if(columnName != ''){
       saveColumn.call(this, e)
     } else {
-      $td.add('tbody tr td:last-child').remove()
+      $('thead .new-column, tbody .new-column').prev().remove()
+      incrementFooterColspan(-1)
       if(fresh){ showTableSetup() }
     }
   }).on('keydown', function(e){
-    // tab key saves and creates a new column
-    if(e.which == 9){
+    // return key saves,
+    // escape key aborts,
+    // tab key saves
+    var columnName = $.trim($(this).val())
+    if(e.which == 13 && columnName != ''){
       e.preventDefault()
       saveColumn.call(this, e)
-      newColumn()
+    } else if(e.which == 27){
+      $('thead .new-column, tbody .new-column').prev().remove()
+      incrementFooterColspan(-1)
+      if(fresh){ showTableSetup() }
+    } else if(e.which == 9 && columnName != ''){
+      e.preventDefault()
+      saveColumn.call(this, e)
     }
   })
-  $('tbody tr').append('<td>')
+  $('tbody tr').each(function(i){
+    $(this).children('.new-column').before('<td data-row="' + (i+1) + '">')
+  })
+  incrementFooterColspan(1)
 }
 
 function saveColumn(e){
@@ -192,18 +191,20 @@ function saveColumn(e){
     if($.trim(output) == "success"){
       if(fresh){
         fresh = false
-        $th.before('<th data-column="rowid">rowid</th>')
+        $th.before('<th data-column="rowid"></th>')
       }
       setStatus('saved')
-      $th.add('tbody tr td:last-child').attr('data-column', columnName)
+      $('thead .new-column, tbody .new-column').prev().attr('data-column', columnName)
     } else {
-      $th.add('tbody tr td:last-child').remove()
+      $('thead .new-column, tbody .new-column').prev().remove()
+      incrementFooterColspan(-1)
       if(fresh){ showTableSetup() }
       scraperwiki.alert('Could not create new column', 'SQL error: ' + output, 1)
       setStatus('')
     }
   }, function(error){
-    $th.add('tbody tr td:last-child').remove()
+    $('thead .new-column, tbody .new-column').prev().remove()
+    incrementFooterColspan(-1)
     if(fresh){ showTableSetup() }
     scraperwiki.alert('Could not create new column', error.status + ' ' + error.statusText + ', ' + error.responseText, 1)
     setStatus('')
@@ -223,19 +224,13 @@ function newRow(){
 }
 
 function highlightColumn(e){
-  e.stopPropagation()
-  var $th = $(this)
-  var eq = $th.index() + 1
-  var $column = $('td:nth-child(' + eq + ')').add($th)
-  $column.addClass('highlighted')
-  $('<a class="deleteColumn" title="Delete this column"></a>').on('click', deleteColumn).appendTo($th)
+  var eq = $(this).index() + 1
+  $('th:nth-child(' + eq + '), td:nth-child(' + eq + ')').addClass('highlighted')
 }
 
 function unhighlightColumn(e){
   var eq = $(this).index() + 1
-  $(this).removeClass('highlighted')
-  $('td:nth-child(' + eq + ')').removeClass('highlighted')
-  $(this).children('a').remove()
+  $('th:nth-child(' + eq + '), td:nth-child(' + eq + ')').removeClass('highlighted')
 }
 
 function renameColumn(e){
@@ -338,6 +333,11 @@ function deleteColumn(){
   })
 }
 
+function incrementFooterColspan(increment){
+  var $td = $('tfoot td:last-child').prev()
+  $td.attr('colspan', parseInt($td.attr('colspan')) + increment)
+}
+
 function setStatus(status){
   if(!status){
     $('#status').fadeOut(function(){
@@ -397,6 +397,6 @@ $(function(){
   $(document).on('click', '.new-column', newColumn)
   $(document).on('click', 'td:not(.editing, .new-row, .new-column)', editCell)
   $(document).on('click', 'th:not(.placeholder, .editing, .new-column)', renameColumn)
-  $(document).on('mouseenter', 'th', highlightColumn)
-  $(document).on('mouseleave', 'th', unhighlightColumn)
+  $(document).on('mouseenter', 'th, .new-column', highlightColumn)
+  $(document).on('mouseleave', 'th, .new-column', unhighlightColumn)
 });

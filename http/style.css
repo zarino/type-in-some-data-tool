@@ -70,6 +70,11 @@ th:hover {
   background-color: #E7F2F7;
 }
 
+th.new,
+td.new {
+  width: 200px;
+}
+
 
 
 /* "rowid" cells along left-hand side */
@@ -115,8 +120,16 @@ tbody td:first-child:hover:before {
     content: "";
 }
 
+
+
+/* "New row" row at the bottom */
+
 tfoot td:first-child {
   font-weight: bold;
+}
+
+tfoot td:last-child {
+  border-left: 1px solid #ddd;
 }
 
 tfoot td,
@@ -136,6 +149,39 @@ tfoot tr:hover td:first-child {
   background-color: #acf0ac;
   color: #3d8c3d;
 }
+
+
+
+/* "New column" cells along the right-hand side */
+
+td.new-column,
+th.new-column,
+.table-striped tbody > tr:nth-child(odd) > td.new-column {
+  background: transparent;
+  border-top: none;
+  border-left: 1px solid #ddd;
+  width: 20px;
+  text-align: center;
+  color: #aaa;
+  cursor: pointer;
+}
+
+th.new-column {
+  border-bottom: 1px solid #ddd;
+}
+
+td.new-column.highlighted,
+th.new-column.highlighted,
+tbody > tr:nth-child(odd) > td.new-column.highlighted {
+  background-color: #c8f6c8;
+  border-color: #9ACE9A;
+}
+
+th.new-column.highlighted {
+  background-color: #acf0ac;
+  color: #3d8c3d;
+}
+
 
 
 /* Editing cells */
