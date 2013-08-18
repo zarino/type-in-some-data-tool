@@ -462,8 +462,8 @@ $(function(){
   $(document).on('mouseenter', '.new-column', highlightColumn)
   $(document).on('mouseleave', '.new-column', unhighlightColumn)
 
-  $(document).on('mouseenter', 'th:not(:first-child)', showColumnDeleter)
-  $(document).on('mouseleave', 'th:not(:first-child)', hideColumnDeleter)
+  $(document).on('mouseenter', 'th:not(:first-child, .new-column)', showColumnDeleter)
+  $(document).on('mouseleave', 'th:not(:first-child, .new-column)', hideColumnDeleter)
 
   $(document).on('mouseenter', '.delete-column', endangerColumn)
   $(document).on('mouseleave', '.delete-column', unendangerColumn)
