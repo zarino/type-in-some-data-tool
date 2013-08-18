@@ -224,6 +224,28 @@ function newRow(){
   editCell.call($tr.children().eq(1)[0])
 }
 
+function deleteRow(){
+  setStatus('saving')
+  var $tr = $(this).parent('tr').hide()
+  var rowid = parseInt($(this).attr('data-row'))
+  var sql = 'DELETE FROM "data" WHERE rowid=' + sqlEscape(rowid, true) + ' LIMIT 1;'
+  var cmd = 'sqlite3 ~/scraperwiki.sqlite ' + scraperwiki.shellEscape(sql) + ' && echo "success"'
+  scraperwiki.exec(cmd, function(output){
+    if($.trim(output) == "success"){
+      $tr.remove()
+      setStatus('saved')
+    } else {
+      $tr.show()
+      scraperwiki.alert('Could not delete row', 'SQL error: ' + output, 1)
+      setStatus('')
+    }
+  }, function(error){
+    $tr.show()
+    scraperwiki.alert('Could not delete row', error.status + ' ' + error.statusText + ', ' + error.responseText, 1)
+    setStatus('')
+  })
+}
+
 function highlightColumn(e){
   var eq = $(this).index() + 1
   $('th:nth-child(' + eq + '), td:nth-child(' + eq + ')').addClass('highlighted')
@@ -396,8 +418,9 @@ populateTable()
 $(function(){
   $(document).on('click', '.new-row', newRow)
   $(document).on('click', '.new-column', newColumn)
-  $(document).on('click', 'td:not(.editing, .new-row, .new-column)', editCell)
-  $(document).on('click', 'th:not(.placeholder, .editing, .new-column)', renameColumn)
+  $(document).on('click', 'tbody td:first-child', deleteRow)
+  $(document).on('click', 'td:not(.editing, .new-row, .new-column, :first-child)', editCell)
+  $(document).on('click', 'th:not(.placeholder, .editing, .new-column, :first-child)', renameColumn)
   $(document).on('mouseenter', 'th, .new-column', highlightColumn)
   $(document).on('mouseleave', 'th, .new-column', unhighlightColumn)
 });
