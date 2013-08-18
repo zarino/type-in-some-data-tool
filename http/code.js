@@ -135,7 +135,7 @@ function saveCell(e){
       setStatus('')
     }
   }, function(error){
-    $td.removeClass('saving').addClass('failed').text( $td.attr('data-originalValue') )
+    $td.removeClass('saving').text( $td.attr('data-originalValue') )
     scraperwiki.alert('Could not save new cell value', error.status + ' ' + error.statusText + ', ' + error.responseText, 1)
     setStatus('')
   })
@@ -297,7 +297,7 @@ function saveColumnName(){
 
   var oldColumns = []
   var newColumns = []
-  $('th:visible').each(function(){
+  $('th:visible').not('[data-column="rowid"], .new-column').each(function(){
     var n = $(this).attr('data-column')
     oldColumns.push(sqlEscape(n, false))
     if(n == originalName){
@@ -316,12 +316,12 @@ function saveColumnName(){
       setStatus('saved')
       $('[data-column="' + originalName + '"]').attr('data-column', newName)
     } else {
-      $th.removeClass('saving').addClass('failed').css('width', '').text(originalName)
+      $th.removeClass('saving').css('width', '').text(originalName)
       scraperwiki.alert('Could not rename column', 'SQL error: ' + output, 1)
       setStatus('')
     }
   }, function(error){
-    $th.removeClass('saving').addClass('failed').css('width', '').text(originalName)
+    $th.removeClass('saving').css('width', '').text(originalName)
     scraperwiki.alert('Could not rename column', error.status + ' ' + error.statusText + ', ' + error.responseText, 1)
     setStatus('')
   })
@@ -330,9 +330,8 @@ function saveColumnName(){
 function deleteColumn(){
   setStatus('saving')
   var $th = $(this).parent('th')
-  $th.addClass('deleting')
   var cols = []
-  $('th:visible').not($th).not('[data-column="rowid"]').each(function(){
+  $('th:visible').not($th).not('[data-column="rowid"], .new-column').each(function(){
     cols.push($(this).text())
   })
   cols = '"' + cols.join('", "') + '"'
