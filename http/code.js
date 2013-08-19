@@ -86,16 +86,16 @@ function editCell(e){
     } else if(e.which == 9){
       e.preventDefault()
       if(e.shiftKey){
-        if($(this).parent().prev(':visible').length){
+        if($(this).parent().prev().not(':first-child, .new-column').length){
           editCell.call($(this).parent().prev()[0], e)
-        } else if($(this).parents('tr').prev().length){
-          editCell.call($(this).parents('tr').prev().children('td:visible').eq(-1)[0], e)
+        } else {
+          saveCell.call(this, e)
         }
       } else {
-        if($(this).parent().next().length){
+        if($(this).parent().next().not(':first-child, .new-column').length){
           editCell.call($(this).parent().next()[0], e)
-        } else if($(this).parents('tr').next().length){
-          editCell.call($(this).parents('tr').next().children('td:visible').eq(0)[0], e)
+        } else {
+          saveCell.call(this, e)
         }
       }
     }
