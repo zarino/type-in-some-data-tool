@@ -58,7 +58,6 @@ function showTableSetup(){
   var cmd = 'sqlite3 ~/scraperwiki.sqlite ' + scraperwiki.shellEscape(sql) + ' && echo "success"'
   scraperwiki.exec(cmd, function(output){
     if($.trim(output) == "success"){
-      setStatus('saved')
       populateTable()
     } else {
       scraperwiki.alert('Could not create table', 'SQL error: ' + output, 1)
