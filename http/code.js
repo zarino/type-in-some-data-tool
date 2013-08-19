@@ -53,8 +53,21 @@ function populateTable(){
 }
 
 function showTableSetup(){
-  fresh = true
-  console.log('create a starter table here')
+  setStatus('creating')
+  var sql = 'BEGIN TRANSACTION; CREATE TABLE "data" ("city", "country", "lat", "lng", "population"); INSERT INTO "data" VALUES (\'London\', \'United Kingdom\', 51.507222, -0.1275, 8308369), (\'New York\', \'NY, USA\', 40.67, -73.94, 8336697), (\'Berlin\', \'Germany\', 52.516667, 13.383333, 3292365), (\'Tokyo\', \'Japan\', 35.689506, 139.6917, 13185502); COMMIT;'
+  var cmd = 'sqlite3 ~/scraperwiki.sqlite ' + scraperwiki.shellEscape(sql) + ' && echo "success"'
+  scraperwiki.exec(cmd, function(output){
+    if($.trim(output) == "success"){
+      setStatus('saved')
+      populateTable()
+    } else {
+      scraperwiki.alert('Could not create table', 'SQL error: ' + output, 1)
+      setStatus('')
+    }
+  }, function(error){
+    scraperwiki.alert('Could not create table', error.status + ' ' + error.statusText + ', ' + error.responseText, 1)
+    setStatus('')
+  })
 }
 
 function editCell(e){
@@ -151,7 +164,6 @@ function newColumn(){
     } else {
       $('thead .new-column, tbody .new-column').prev().remove()
       incrementFooterColspan(-1)
-      if(fresh){ showTableSetup() }
     }
   }).on('keydown', function(e){
     // return key saves,
@@ -164,7 +176,6 @@ function newColumn(){
     } else if(e.which == 27){
       $('thead .new-column, tbody .new-column').prev().remove()
       incrementFooterColspan(-1)
-      if(fresh){ showTableSetup() }
     } else if(e.which == 9 && columnName != ''){
       e.preventDefault()
       saveColumn.call(this, e)
@@ -180,32 +191,22 @@ function saveColumn(e){
   setStatus('saving')
   var $th = $(this).parent()
   var columnName = $(this).val()
-  if(fresh){
-    var sql = 'CREATE TABLE IF NOT EXISTS "data" (' + sqlEscape(columnName, false) + ');'
-  } else {
-    var sql = 'ALTER TABLE "data" ADD COLUMN ' + sqlEscape(columnName, false) + ';'
-  }
+  var sql = 'ALTER TABLE "data" ADD COLUMN ' + sqlEscape(columnName, false) + ';'
   var cmd = 'sqlite3 ~/scraperwiki.sqlite ' + scraperwiki.shellEscape(sql) + ' && echo "success"'
   $th.removeClass('new editing').text(columnName)
   scraperwiki.exec(cmd, function(output){
     if($.trim(output) == "success"){
-      if(fresh){
-        fresh = false
-        $th.before('<th data-column="rowid"></th>')
-      }
       setStatus('saved')
       $('thead .new-column, tbody .new-column').prev().attr('data-column', columnName)
     } else {
       $('thead .new-column, tbody .new-column').prev().remove()
       incrementFooterColspan(-1)
-      if(fresh){ showTableSetup() }
       scraperwiki.alert('Could not create new column', 'SQL error: ' + output, 1)
       setStatus('')
     }
   }, function(error){
     $('thead .new-column, tbody .new-column').prev().remove()
     incrementFooterColspan(-1)
-    if(fresh){ showTableSetup() }
     scraperwiki.alert('Could not create new column', error.status + ' ' + error.statusText + ', ' + error.responseText, 1)
     setStatus('')
   })
@@ -406,6 +407,8 @@ function setStatus(status){
     setTimeout(function(){
       if($('#status').html()=='Loaded'){ setStatus('') }
     }, 2000)
+  } else if(status=='creating'){
+    var html = 'Creating table&hellip;'
   } else if(status=='saving'){
     var html = 'Saving&hellip;'
   } else if(status=='saved'){
@@ -415,7 +418,7 @@ function setStatus(status){
     }, 2000)
   }
   $('#status').stop().html(html).show()
-  if(status=='loading' || status=='saving'){
+  if(status=='loading' || status=='saving' || status=='creating'){
     $('#status').addClass('working')
   } else {
     $('#status').removeClass('working')
@@ -442,8 +445,6 @@ function sqlEscape(str, literal) {
     return str
   }
 }
-
-var fresh = false
 
 populateTable()
 
