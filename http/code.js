@@ -1,4 +1,4 @@
-function populateTable(){
+function populateTable(demo){
   // Is there already a table?
   scraperwiki.sql.meta(function(meta){
     if('data' in meta.table){
@@ -30,7 +30,11 @@ function populateTable(){
             })
             $tr.append('<td class="new-column"></td>')
           })
-          setStatus('loaded')
+          if(demo){
+            setStatus('demo')
+          } else {
+            setStatus('loaded')
+          }
         }
       }, function(error){
         scraperwiki.alert('An unexpected error occurred', error.status + ' ' + error.statusText + ', ' + error.responseText, 1)
@@ -58,7 +62,7 @@ function showTableSetup(){
   var cmd = 'sqlite3 ~/scraperwiki.sqlite ' + scraperwiki.shellEscape(sql) + ' && echo "success"'
   scraperwiki.exec(cmd, function(output){
     if($.trim(output) == "success"){
-      populateTable()
+      populateTable(true)
     } else {
       scraperwiki.alert('Could not create table', 'SQL error: ' + output, 1)
       setStatus('')
@@ -407,7 +411,7 @@ function setStatus(status){
       if($('#status').html()=='Loaded'){ setStatus('') }
     }, 2000)
   } else if(status=='creating'){
-    var html = 'Creating table&hellip;'
+    var html = 'Creating demo table&hellip;'
   } else if(status=='saving'){
     var html = 'Saving&hellip;'
   } else if(status=='saved'){
@@ -415,6 +419,8 @@ function setStatus(status){
     setTimeout(function(){
       if($('#status').html()=='Saved'){ setStatus('') }
     }, 2000)
+  } else if(status=='demo'){
+    var html = '<b>Here&rsquo;s some data to start you off.</b> Click cells to rename or delete columns and rows.'
   }
   $('#status').stop().html(html).show()
   if(status=='loading' || status=='saving' || status=='creating'){
